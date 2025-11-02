@@ -4,7 +4,7 @@
 
 SpamPatrol is an ongoing project focused on detecting and reporting spam phone numbers in France. The platform aims to help users check, report, and analyze suspicious numbers.
 
-> ⚠️ This project is currently in early development. Features and functionalities are not complete yet.
+> ⚠️ This project is currently in early development. Features and functionalities are not complete yet, and certain aspects may evolve depending on the progress of the project.
 
 ## Planned Features
 
