@@ -4,9 +4,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import numberRouter from './routes/number.js';
-import reportsRouter from './routes/reports.js';
-import statsRouter from './routes/stats.js';
+import prefixRoutes from "./routes/prefix.js";
+import reportRoutes from "./routes/reports.js";
+import analyseRoutes from "./routes/analyse.js";
+import repliquesRoutes from "./routes/repliques.js";
 
 const app = express();
 app.use(helmet());
@@ -14,9 +15,10 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 
-app.use('/api/number', numberRouter);
-app.use('/api/reports', reportsRouter);
-app.use('/api/stats', statsRouter);
+app.use("/api/prefixes", prefixRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/analyse", analyseRoutes);
+app.use("/api/repliques", repliquesRoutes);
 
 // Petite route ping
 app.get('/api/health', (_, res) => res.json({ ok: true }));

@@ -1,0 +1,5 @@
+[
+  {"prefix": "060", "operator": "Orange", "type": "Mobile"},
+  {"prefix": "061", "operator": "SFR", "type": "Mobile"},
+  {"prefix": "01",  "operator": "France Telecom", "type": "Fixe"}
+]
