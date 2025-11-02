@@ -1,0 +1,17 @@
+{
+  "name": "spam-patrol",
+  "version": "1.0.0",
+  "description": "Fullstack project combining the SpamPatrol frontend and backend.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install --legacy-peer-deps",
+    "start:back": "cd backend && npm run dev",
+    "start:front": "cd frontend && npm start",
+    "start-all": "npm run install:all && concurrently \"npm run start:back\" \"npm run start:front\""
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
