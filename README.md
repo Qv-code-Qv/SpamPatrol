@@ -30,8 +30,4 @@ Provide a public API to allow external applications to access SpamPatrol data (p
 
 ## Installation (Early Version)
 
-1. Clone the repository  
-   ```bash
-   git clone https://github.com/yourusername/spampatrol.git
-
 
