@@ -1,33 +1,34 @@
 # SpamPatrol
 
-# Presentation
+SpamPatrol is an ongoing project aimed at detecting and reporting spam phone numbers in France. The goal is to allow users to check, report, and analyze suspicious numbers.
 
-SpamPatrol is an ongoing project focused on detecting and reporting spam phone numbers in France. The platform aims to help users check, report, and analyze suspicious numbers.
+> ⚠️ This project is currently in early development. Features and functionalities are not complete yet, and some steps may be modified as development progresses.
 
-> ⚠️ This project is currently in early development. Features and functionalities are not complete yet, and certain aspects may evolve depending on the progress of the project.
+![WIP](https://img.shields.io/badge/Status-Work%20in%20Progress-orange)
+
+---
 
 ## Planned Features
 
-### 1. Phone Number Lookup
-Provide information about a phone number, including type (mobile, landline, VoIP), carrier, and region.
+- **Phone Number Lookup**: Get information about a phone number (type, carrier, region).  
+- **Spam Reporting**: Report unwanted calls or SMS and contribute to the community database.  
+- **Statistics & Analytics**: View trends and patterns of reported numbers, with AI analysis planned.  
+- **Public API**: Allow external applications to access SpamPatrol data (planned feature).
 
-### 2. Spam Reporting
-Allow users to report spam calls or SMS and contribute to the community database.
+---
 
-### 3. Statistics & Analytics
-Show statistics and trends on reported numbers, with potential AI-powered spam analysis.
+## Technologies Used
 
-### 4. Public API
-Provide a public API to allow external applications to access SpamPatrol data (planned).
+- **React.js** with **Light Bootstrap Dashboard React** — Frontend  
+- **Node.js + Express** — Backend (API)  
+- **ARCEP phone number prefixes** for phone data  
+- **AI for spam analysis** (planned feature)  
+- **Heroku** for deployment  
 
-# Technologies Used
-
-- React.js with Bootstrap template — Frontend  
-- Node.js + Express — Backend (API)  
-- ARCEP phone number prefixes for phone data  
-- AI for spam analysis (planned)  
-- Heroku (Deployment)
+---
 
 ## Installation (Early Version)
 
-
+1. Clone the repository:  
+   ```bash
+   git clone https://github.com/yourusername/spampatrol.git
