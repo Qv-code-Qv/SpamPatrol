@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
+  },
+  "dependencies": {
+    "json2csv": "^6.0.0-alpha.2"
   }
 }

@@ -9,6 +9,7 @@ import reportRoutes from "./routes/reports.js";
 import analyseRoutes from "./routes/analyse.js";
 import repliquesRoutes from "./routes/repliques.js";
 import statsRoutes from "./routes/stats.js";
+import exportCsvRoutes from "./routes/exportCsv.js";
 
 
 
@@ -23,6 +24,8 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/analyse", analyseRoutes);
 app.use("/api/repliques", repliquesRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/api/export-csv", exportCsvRoutes);
+
 
 // Petite route ping
 app.get('/api/health', (_, res) => res.json({ ok: true }));
