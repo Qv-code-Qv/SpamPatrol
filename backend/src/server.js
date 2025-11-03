@@ -8,6 +8,9 @@ import prefixRoutes from "./routes/prefix.js";
 import reportRoutes from "./routes/reports.js";
 import analyseRoutes from "./routes/analyse.js";
 import repliquesRoutes from "./routes/repliques.js";
+import statsRoutes from "./routes/stats.js";
+
+
 
 const app = express();
 app.use(helmet());
@@ -19,6 +22,7 @@ app.use("/api/prefixes", prefixRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/analyse", analyseRoutes);
 app.use("/api/repliques", repliquesRoutes);
+app.use("/api/stats", statsRoutes);
 
 // Petite route ping
 app.get('/api/health', (_, res) => res.json({ ok: true }));

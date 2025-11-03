@@ -1,9 +1,9 @@
 import express from "express";
 import fs from "fs";
-import path from "path";
+import { getDataPath } from "../utils/getDataPath.js";
 
 const router = express.Router();
-const dataPath = path.resolve("src/data/prefixes.json"); // ✅ chemin corrigé
+const dataPath = getDataPath("prefixes.json"); // ✅ chemin corrigé
 
 router.get("/:numero", (req, res) => {
   const numero = req.params.numero;

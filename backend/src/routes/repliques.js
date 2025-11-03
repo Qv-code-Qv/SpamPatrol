@@ -1,9 +1,9 @@
 import express from "express";
 import fs from "fs";
-import path from "path";
+import { getDataPath } from "../utils/getDataPath.js";
 
 const router = express.Router();
-const dataPath = path.resolve("src/data/repliques.json"); // ✅ chemin corrigé
+const dataPath = getDataPath("repliques.json");
 
 // GET toutes les répliques
 router.get("/", (req, res) => {
