@@ -1,5 +1,89 @@
-[
-  {"prefix": "060", "operator": "Orange", "type": "Mobile"},
-  {"prefix": "061", "operator": "SFR", "type": "Mobile"},
-  {"prefix": "01",  "operator": "France Telecom", "type": "Fixe"}
-]
+{
+  "npv_officiels": [
+    {
+      "prefixe": "0162",
+      "zone": "Île-de-France",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0163",
+      "zone": "Île-de-France",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0270",
+      "zone": "Nord-Ouest",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0271",
+      "zone": "Nord-Ouest",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0377",
+      "zone": "Nord-Est",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0378",
+      "zone": "Nord-Est",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0424",
+      "zone": "Sud-Est",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0425",
+      "zone": "Sud-Est",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0568",
+      "zone": "Sud-Ouest",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0569",
+      "zone": "Sud-Ouest",
+      "nature": "Géographique vérifié"
+    },
+    {
+      "prefixe": "0948",
+      "zone": "National",
+      "nature": "Non géographique vérifié"
+    },
+    {
+      "prefixe": "0949",
+      "zone": "National",
+      "nature": "Non géographique vérifié"
+    },
+    {
+      "prefixe": "09475",
+      "zone": "Guadeloupe, St-Martin, St-Barthélemy",
+      "nature": "Outre-mer vérifié"
+    },
+    {
+      "prefixe": "09476",
+      "zone": "Guyane",
+      "nature": "Outre-mer vérifié"
+    },
+    {
+      "prefixe": "09477",
+      "zone": "Martinique",
+      "nature": "Outre-mer vérifié"
+    },
+    {
+      "prefixe": "09478",
+      "zone": "La Réunion, Mayotte",
+      "nature": "Outre-mer vérifié"
+    },
+    {
+      "prefixe": "09479",
+      "zone": "La Réunion, Mayotte",
+      "nature": "Outre-mer vérifié"
+    }
+  ]
+}
