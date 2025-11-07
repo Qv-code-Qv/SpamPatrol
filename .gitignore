@@ -36,3 +36,67 @@ Thumbs.db
 # Misc
 coverage/
 *.bak
+# =========================================================
+# 📦 Node.js / React / Express global ignore file
+# Pour projet fullstack : SpamPatrol
+# =========================================================
+
+# --- Dépendances ---
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+package-lock.json
+
+# --- Build / Compilation ---
+dist/
+build/
+frontend/build/
+backend/dist/
+.cache/
+.tmp/
+
+# --- Environnements / Config ---
+.env
+frontend/.env
+backend/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- IDE / Éditeurs ---
+.vscode/
+.idea/
+*.swp
+
+# --- Logs ---
+logs/
+*.log
+debug.log
+error.log
+
+# --- ESLint / Cache ---
+.eslintcache
+frontend/.eslintcache
+backend/.eslintcache
+
+# --- Système / OS ---
+.DS_Store
+Thumbs.db
+
+# --- Autres fichiers temporaires ---
+*.tmp
+*.bak
+
+# --- Tests ---
+coverage/
+jest-cache/
+jest-test-results.json
+
+# --- Backup ou archives ---
+*.zip
+*.tar
+*.gz
+
+# --- Documentation générée ---
+docs/
