@@ -62,4 +62,3 @@ jest-test-results.json
 
 # --- Documentation générée ---
 docs/
-backend/.env
