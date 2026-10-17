@@ -1,14 +1,16 @@
 import express from "express";
-import fs from "fs";
 import { getDataPath } from "../utils/getDataPath.js";
+import { readJson } from "../utils/jsonStore.js";
 
-const router = express.Router();
-const dataPath = getDataPath("repliques.json");
+export function createRepliquesRouter({ dataPath = getDataPath("repliques.json") } = {}) {
+  const router = express.Router();
+  router.get("/", async (_req, res, next) => {
+    try {
+      const data = await readJson(dataPath);
+      return res.json(Array.isArray(data) ? data.filter((item) => typeof item === "string") : []);
+    } catch (error) { return next(error); }
+  });
+  return router;
+}
 
-// GET toutes les répliques
-router.get("/", (req, res) => {
-  const data = JSON.parse(fs.readFileSync(dataPath, "utf8"));
-  res.json(data);
-});
-
-export default router;
+export default createRepliquesRouter();

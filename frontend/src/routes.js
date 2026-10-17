@@ -23,8 +23,38 @@ import Icons from "views/Icons.js";
 import Maps from "views/Maps.js";
 import Notifications from "views/Notifications.js";
 import Upgrade from "views/Upgrade.js";
+import Search from "views/Search.js";
+import ReportForm from "components/ReportForm.js";
 
 const dashboardRoutes = [
+  {
+    path: "/search",
+    name: "Recherche de numéro",
+    icon: "nc-icon nc-zoom-split",
+    component: Search,
+    layout: "/admin"
+  },
+  {
+    path: "/dashboard",
+    name: "Tableau de bord",
+    icon: "nc-icon nc-chart-pie-35",
+    component: Dashboard,
+    layout: "/admin"
+  },
+  {
+    path: "/table",
+    name: "Signalements",
+    icon: "nc-icon nc-notes",
+    component: TableList,
+    layout: "/admin"
+  },
+  {
+    path: "/report",
+    name: "Signaler un numéro",
+    icon: "nc-icon nc-simple-add",
+    component: ReportForm,
+    layout: "/admin"
+  },
   {
     upgrade: true,
     path: "/upgrade",
@@ -34,24 +64,10 @@ const dashboardRoutes = [
     layout: "/admin"
   },
   {
-    path: "/dashboard",
-    name: "Dashboard",
-    icon: "nc-icon nc-chart-pie-35",
-    component: Dashboard,
-    layout: "/admin"
-  },
-  {
     path: "/user",
     name: "User Profile",
     icon: "nc-icon nc-circle-09",
     component: UserProfile,
-    layout: "/admin"
-  },
-  {
-    path: "/table",
-    name: "Table List",
-    icon: "nc-icon nc-notes",
-    component: TableList,
     layout: "/admin"
   },
   {

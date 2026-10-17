@@ -1,23 +1,39 @@
 import express from "express";
-import fs from "fs";
+import { randomUUID } from "node:crypto";
 import { getDataPath } from "../utils/getDataPath.js";
+import { readJson, updateJsonArray } from "../utils/jsonStore.js";
+import { getReportInputError, normalizeFrenchNumber, normalizeStoredReports } from "../utils/reportSchema.js";
 
-const router = express.Router();
-const dataPath = getDataPath("reports.json");
+export function createReportsRouter({ dataPath = getDataPath("reports.json") } = {}) {
+  const router = express.Router();
+  router.get("/", async (req, res, next) => {
+    try {
+      const reports = normalizeStoredReports(await readJson(dataPath));
+      if (req.query.number !== undefined) {
+        const number = normalizeFrenchNumber(req.query.number);
+        if (!number) return res.status(400).json({ message: "Saisissez un numéro de téléphone français valide." });
+        const matches = reports.filter((report) => report.number === number);
+        return res.json({ number, frequency: matches.length, reports: matches });
+      }
+      return res.json(reports);
+    } catch (error) { return next(error); }
+  });
+  router.post("/", async (req, res, next) => {
+    const validationError = getReportInputError(req.body);
+    if (validationError) return res.status(400).json({ message: validationError });
+    const report = {
+      id: randomUUID(),
+      number: normalizeFrenchNumber(req.body.number),
+      category: req.body.category,
+      comment: req.body.comment.trim(),
+      date: new Date().toISOString(),
+    };
+    try {
+      await updateJsonArray(dataPath, (records) => [...records, report]);
+      return res.status(201).json(report);
+    } catch (error) { return next(error); }
+  });
+  return router;
+}
 
-// GET tous les signalements
-router.get("/", (req, res) => {
-  const data = JSON.parse(fs.readFileSync(dataPath, "utf8"));
-  res.json(data);
-});
-
-// POST un nouveau signalement
-router.post("/", (req, res) => {
-  const data = JSON.parse(fs.readFileSync(dataPath, "utf8"));
-  const newReport = { ...req.body, date: new Date().toISOString().split("T")[0] };
-  data.push(newReport);
-  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
-  res.json(newReport);
-});
-
-export default router;
+export default createReportsRouter();

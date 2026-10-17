@@ -1,30 +1,20 @@
 import express from "express";
-import fs from "fs";
 import { getDataPath } from "../utils/getDataPath.js";
-import { parse } from "json2csv"; // npm install json2csv
+import { reportsToCsv } from "../utils/csv.js";
+import { readJson } from "../utils/jsonStore.js";
+import { normalizeStoredReports } from "../utils/reportSchema.js";
 
-const router = express.Router();
-const dataPath = getDataPath("reports.json");
+export function createExportCsvRouter({ dataPath = getDataPath("reports.json") } = {}) {
+  const router = express.Router();
+  router.get("/", async (_req, res, next) => {
+    try {
+      const reports = normalizeStoredReports(await readJson(dataPath));
+      if (reports.length === 0) return res.status(404).json({ message: "Aucun signalement exploitable à exporter." });
+      res.set({ "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="signalements.csv"' });
+      return res.send(reportsToCsv(reports));
+    } catch (error) { return next(error); }
+  });
+  return router;
+}
 
-// GET export CSV
-router.get("/", (req, res) => {
-  const data = JSON.parse(fs.readFileSync(dataPath, "utf8"));
-
-  if (!data || data.length === 0) {
-    return res.status(404).json({ message: "Aucun signalement à exporter" });
-  }
-
-  try {
-    const fields = Object.keys(data[0]); // toutes les colonnes du JSON
-    const csv = parse(data, { fields });
-
-    res.header("Content-Type", "text/csv");
-    res.attachment("signalements.csv"); // nom du fichier exporté
-    return res.send(csv);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Erreur lors de l'export CSV" });
-  }
-});
-
-export default router;
+export default createExportCsvRouter();
