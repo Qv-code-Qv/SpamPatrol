@@ -60,5 +60,4 @@ jest-test-results.json
 *.tar
 *.gz
 
-# --- Documentation générée ---
-docs/
+
