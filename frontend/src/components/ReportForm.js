@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, Button, Card, Col, Form, Row } from "react-bootstrap";
+import { Alert, Button, Card, Col, Container, Form, Row } from "react-bootstrap";
 import { submitReport } from "services/api";
 
 const categories = ["Spam", "Démarchage", "Sondage", "Arnaque", "Fraude"];
