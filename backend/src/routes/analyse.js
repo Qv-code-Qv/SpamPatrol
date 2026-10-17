@@ -1,20 +1,25 @@
 import express from "express";
-const router = express.Router();
+import { normalizeFrenchNumber } from "../utils/reportSchema.js";
 
-// POST analyse IA simulée
-router.post("/", (req, res) => {
-  const { number, message } = req.body;
-  const categories = ["Spam", "Démarchage", "Sondage"];
-  const category = categories[Math.floor(Math.random() * categories.length)];
-  const score = (Math.random()).toFixed(2);
-
-  res.json({
-    number,
-    message,
-    summary: message.slice(0, 50) + (message.length > 50 ? "..." : ""),
-    category,
-    score
+export function createAnalyseRouter() {
+  const router = express.Router();
+  router.post("/", (req, res) => {
+    const { number, message } = req.body || {};
+    if (!normalizeFrenchNumber(number)) return res.status(400).json({ message: "Saisissez un numéro de téléphone français valide." });
+    if (typeof message !== "string" || message.trim().length < 3 || message.length > 1000) {
+      return res.status(400).json({ message: "Le texte à résumer doit contenir entre 3 et 1000 caractères." });
+    }
+    const text = message.trim();
+    return res.json({
+      number: normalizeFrenchNumber(number),
+      summary: text.length > 160 ? `${text.slice(0, 157)}...` : text,
+      category: null,
+      score: null,
+      mode: "simulation",
+      disclaimer: "Résumé indicatif généré localement. Aucune IA ni évaluation de risque n’est utilisée.",
+    });
   });
-});
+  return router;
+}
 
-export default router;
+export default createAnalyseRouter();

@@ -1,34 +1,15 @@
-import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
+import "dotenv/config";
+import { createServer } from "node:http";
+import { createApp } from "./app.js";
 
-import prefixRoutes from "./routes/prefix.js";
-import reportRoutes from "./routes/reports.js";
-import analyseRoutes from "./routes/analyse.js";
-import repliquesRoutes from "./routes/repliques.js";
-import statsRoutes from "./routes/stats.js";
-import exportCsvRoutes from "./routes/exportCsv.js";
+const app = createApp();
+const PORT = process.env.PORT === undefined ? 4000 : Number(process.env.PORT);
+const server = createServer(app);
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") console.error(`Le port ${PORT} est déjà utilisé. Définissez PORT avec un port libre.`);
+  else console.error("Impossible de démarrer l’API :", error.message);
+  process.exitCode = 1;
+});
+server.listen(PORT, () => console.log(`API running on http://localhost:${server.address().port}`));
 
-
-
-const app = express();
-app.use(helmet());
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
-app.use(morgan('dev'));
-
-app.use("/api/prefixes", prefixRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/analyse", analyseRoutes);
-app.use("/api/repliques", repliquesRoutes);
-app.use("/api/stats", statsRoutes);
-app.use("/api/export-csv", exportCsvRoutes);
-
-
-// Petite route ping
-app.get('/api/health', (_, res) => res.json({ ok: true }));
-
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+export { server };
