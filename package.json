@@ -11,7 +11,8 @@
     "test:back": "npm test --prefix backend",
     "test:front": "npm test --prefix frontend",
     "test": "npm run test:back && npm run test:front",
-    "build:front": "npm run build --prefix frontend"
+    "build:front": "npm run build --prefix frontend",
+    "arcep:update": "npm run arcep:update --prefix backend"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

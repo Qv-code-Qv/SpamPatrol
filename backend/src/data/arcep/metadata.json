@@ -1,0 +1,48 @@
+{
+  "generation": "6a785fffe98a612d7141eaa4f652f1befd4f7457a2fc69de510b12bb2325a166-e5644b3361d1142a4888121a879af309dd95ccf5cbec31aadbe92b90aa360988",
+  "activatedAt": "2026-10-19T15:35:37.769Z",
+  "indexFile": "processed/6a785fffe98a612d7141eaa4f652f1befd4f7457a2fc69de510b12bb2325a166-e5644b3361d1142a4888121a879af309dd95ccf5cbec31aadbe92b90aa360988/index.json",
+  "counts": {
+    "allocations": 20931,
+    "entities": 1598,
+    "exactEntityMatches": 20931
+  },
+  "sources": {
+    "MAJNUM": {
+      "dataset": "Ressources en numérotation téléphonique",
+      "url": "https://extranet.arcep.fr/uploads/MAJNUM.csv",
+      "datasetUrl": "https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique",
+      "producer": "ARCEP",
+      "license": "Licence Ouverte / Open Licence",
+      "attribution": "Source : ARCEP, MAJNUM, https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique, mise à jour le 2026-10-19.",
+      "sha256": "6a785fffe98a612d7141eaa4f652f1befd4f7457a2fc69de510b12bb2325a166",
+      "bytes": 1161791,
+      "rows": 20931,
+      "rawFile": "raw/MAJNUM-6a785fffe98a612d7141eaa4f652f1befd4f7457a2fc69de510b12bb2325a166.csv",
+      "encoding": "windows-1252 (CSV ANSI annoncé par la source)",
+      "delimiter": ";",
+      "publishedDate": "2026-10-19"
+    },
+    "IDENTIFIANTS_CE": {
+      "dataset": "Identifiants de communications électroniques",
+      "url": "https://extranet.arcep.fr/uploads/identifiants_CE.csv",
+      "datasetUrl": "https://www.data.gouv.fr/datasets/identifiants-de-communications-electroniques",
+      "producer": "ARCEP",
+      "license": "Licence Ouverte / Open Licence",
+      "attribution": "Source : ARCEP, Identifiants CE, https://www.data.gouv.fr/datasets/identifiants-de-communications-electroniques, mise à jour le 2026-10-19.",
+      "sha256": "e5644b3361d1142a4888121a879af309dd95ccf5cbec31aadbe92b90aa360988",
+      "bytes": 174140,
+      "rows": 1598,
+      "rawFile": "raw/identifiants_CE-e5644b3361d1142a4888121a879af309dd95ccf5cbec31aadbe92b90aa360988.csv",
+      "encoding": "windows-1252 (CSV ANSI annoncé par la source)",
+      "delimiter": ";",
+      "publishedDate": "2026-10-19"
+    }
+  },
+  "limits": [
+    "Les allocations ne prouvent pas l'attribution du numéro à un utilisateur final.",
+    "Les données ne déterminent pas l'opérateur actuel d'un numéro porté.",
+    "Une ressource attribuée par l'ARCEP n'est pas un indicateur de spam.",
+    "Le rapprochement avec les identifiants CE est exact sur le code, sans correspondance approximative."
+  ]
+}

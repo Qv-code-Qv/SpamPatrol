@@ -30,6 +30,10 @@ export async function getPrefix(number) {
   return (await request(`/prefixes/${encodeURIComponent(number)}`)).json();
 }
 
+export async function getArcepAllocation(number) {
+  return (await request(`/arcep/lookup/${encodeURIComponent(number)}`)).json();
+}
+
 export async function getRepliques() {
   return (await request("/repliques")).json();
 }
