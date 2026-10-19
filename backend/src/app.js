@@ -10,6 +10,7 @@ import { createAnalyseRouter } from "./routes/analyse.js";
 import { createRepliquesRouter } from "./routes/repliques.js";
 import { createStatsRouter } from "./routes/stats.js";
 import { createExportCsvRouter } from "./routes/exportCsv.js";
+import { createArcepRouter } from "./routes/arcep.js";
 
 function createSubmissionLimiter({ limit = 10, windowMs = 10 * 60 * 1000 } = {}) {
   const clients = new Map();
@@ -50,6 +51,7 @@ export function createApp({ dataDir = null, submissionLimit = 10 } = {}) {
 
   app.use("/api/prefixes", createPrefixRouter({ dataPath: resolveDataPath("prefixes.json") }));
   app.use("/api/prefix", createPrefixRouter({ dataPath: resolveDataPath("prefixes.json") }));
+  app.use("/api/arcep", createArcepRouter({ dataDir: dataDir ? path.join(dataDir, "arcep") : getDataPath("arcep") }));
   app.use("/api/reports", createSubmissionLimiter({ limit: submissionLimit }));
   app.use("/api/reports", createReportsRouter({ dataPath: resolveDataPath("reports.json") }));
   app.use("/api/analyse", createAnalyseRouter());
