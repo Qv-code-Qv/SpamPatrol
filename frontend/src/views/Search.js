@@ -8,7 +8,7 @@ function Search() {
   const [prefix, setPrefix] = React.useState(null);
   const [arcep, setArcep] = React.useState(null);
   const [arcepMessage, setArcepMessage] = React.useState("");
-  const [prefixMessage, setPrefixMessage] = React.useState("");
+  const [prefixError, setPrefixError] = React.useState("");
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
@@ -19,7 +19,7 @@ function Search() {
     setArcep(null);
     setArcepMessage("");
     setError("");
-    setPrefixMessage("");
+    setPrefixError("");
     setLoading(true);
     try {
       const [reportLookup, arcepLookup, prefixLookup] = await Promise.allSettled([
@@ -30,8 +30,7 @@ function Search() {
       if (arcepLookup.status === "fulfilled") setArcep(arcepLookup.value);
       else setArcepMessage(arcepLookup.reason.message || "Les données ARCEP sont momentanément indisponibles.");
       if (prefixLookup.status === "fulfilled") setPrefix(prefixLookup.value);
-      else if (prefixLookup.reason.status === 404) setPrefixMessage("Aucune information de préfixe disponible dans le jeu local.");
-      else setPrefixMessage("La recherche des préfixes est momentanément indisponible.");
+      else if (prefixLookup.reason.status !== 404) setPrefixError("La recherche des préfixes locaux est momentanément indisponible.");
     } finally {
       setLoading(false);
     }
@@ -62,8 +61,8 @@ function Search() {
                   </Col>
                 </Row>
               </Form>
-              {error && <Alert variant="danger" role="alert">{error}</Alert>}
-              {result && <Alert variant="warning">Ces entrées locales ne sont pas vérifiées et ne permettent pas d’établir la fiabilité d’un numéro.</Alert>}
+              {error && <Alert show variant="danger" role="alert">{error}</Alert>}
+              {result && <Alert show variant="warning">Ces entrées locales ne sont pas vérifiées et ne permettent pas d’établir la fiabilité d’un numéro.</Alert>}
               {(result || arcep || arcepMessage) && (
                 <>
                   <Card className="mt-3">
@@ -72,7 +71,7 @@ function Search() {
                       <p className="card-category mb-0">SpamPatrol est un service indépendant, non affilié et non cautionné par l’ARCEP.</p>
                     </Card.Header>
                     <Card.Body>
-                      {arcepMessage ? <Alert variant="warning" role="status">{arcepMessage}</Alert> : arcep?.allocation ? (
+                      {arcepMessage ? <Alert show variant="warning" role="status">{arcepMessage}</Alert> : arcep?.allocation ? (
                         <>
                           <p><strong>Tranche :</strong> {arcep.allocation.rangeStart} – {arcep.allocation.rangeEnd}</p>
                           <p><strong>Code attributaire :</strong> {arcep.allocation.allocationCode}</p>
@@ -83,7 +82,7 @@ function Search() {
                           <small className="text-muted">L’attribution d’une tranche ne permet pas d’identifier l’utilisateur final ni l’opérateur actuel d’un numéro porté, et n’indique pas un risque de spam.</small>
                         </>
                       ) : arcep ? (
-                        <Alert variant="info" role="status">Les données ARCEP ne permettent pas d’identifier une attribution pour ce numéro.</Alert>
+                        <Alert show variant="info" role="status">Les données ARCEP ne permettent pas d’identifier une attribution pour ce numéro.</Alert>
                       ) : <p className="text-muted mb-0">Chargement des données officielles…</p>}
                     </Card.Body>
                   </Card>
@@ -95,11 +94,11 @@ function Search() {
                           <p><strong>Signalements :</strong> {result.frequency}</p>
                         </Col>
                         <Col md="6">
-                          {prefix ? <p><strong>Préfixe {prefix.prefixe} :</strong> {prefix.nature} — {prefix.zone}</p> : <p className="text-muted">{prefixMessage || "Aucune information de préfixe disponible."}</p>}
+                          {prefix ? <p><strong>Préfixe local {prefix.prefixe} :</strong> {prefix.nature} — {prefix.zone}</p> : prefixError ? <p className="text-muted" role="status">{prefixError}</p> : null}
                         </Col>
                       </Row>
                       {result.reports.length === 0 ? (
-                        <Alert variant="info" role="status">Aucun signalement disponible pour ce numéro.</Alert>
+                        <Alert show variant="info" role="status">Aucun signalement disponible pour ce numéro.</Alert>
                       ) : (
                         <Table responsive hover className="mt-2">
                           <thead><tr><th>Catégorie</th><th>Commentaire</th><th>Date</th></tr></thead>

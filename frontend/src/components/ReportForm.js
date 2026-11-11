@@ -11,20 +11,24 @@ function ReportForm() {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState("");
+  const submissionInProgress = React.useRef(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (submissionInProgress.current) return;
+    submissionInProgress.current = true;
     setError("");
     setSuccess("");
     setBusy(true);
     try {
-      const report = await submitReport({ number, category, comment });
-      setSuccess(`Signalement enregistré pour ${report.number}.`);
+      await submitReport({ number, category, comment });
+      setSuccess("Votre signalement a bien été enregistré.");
       setNumber("");
       setComment("");
     } catch (submissionError) {
-      setError(submissionError.message);
+      setError(submissionError?.message || "Impossible d’enregistrer le signalement. Veuillez réessayer.");
     } finally {
+      submissionInProgress.current = false;
       setBusy(false);
     }
   }
@@ -39,8 +43,8 @@ function ReportForm() {
               <p className="card-category">Partagez votre expérience pour aider la communauté.</p>
             </Card.Header>
             <Card.Body>
-              {error && <Alert variant="danger" role="alert">{error}</Alert>}
-              {success && <Alert variant="success" role="status">{success}</Alert>}
+              {error && <Alert show transition={false} variant="danger" role="alert">{error}</Alert>}
+              {success && <Alert show transition={false} variant="success" role="status">{success}</Alert>}
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3" controlId="report-number">
                   <Form.Label>Numéro de téléphone</Form.Label>

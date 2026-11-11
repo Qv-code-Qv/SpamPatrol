@@ -1,6 +1,6 @@
 # Données officielles de numérotation ARCEP
 
-SpamPatrol utilise les jeux produits par l’ARCEP pour enrichir la recherche des numéros. Ces données officielles sont séparées des signalements communautaires, qui restent dans `backend/src/data/reports.json`.
+SpamPatrol utilise les jeux produits par l'ARCEP pour rechercher et observer les ressources de numérotation. Les données communautaires historiques conservées dans `backend/src/data/reports.json` ne font plus partie du produit cible. Elles doivent rester inchangées pour le moment ; leur inventaire et leur traitement seront décidés dans une étape technique distincte. Le code contient encore des fonctionnalités communautaires héritées, qui doivent être retirées et ne doivent pas être considérées comme réintroduisibles dans la roadmap.
 
 ## Sources et réutilisation
 
@@ -27,4 +27,4 @@ Les deux sources étant des exports complets, une exécution hebdomadaire est ra
 
 MAJNUM décrit des droits réglementaires d’utilisation de tranches, pas l’utilisateur final auquel un numéro a été affecté. Le référentiel CE n’est lié qu’en égalité exacte du code attributaire, sans rapprochement approximatif. Ces fichiers n’identifient pas l’opérateur actuel d’un numéro porté et ne fournissent aucun indicateur de spam ou de fraude. Une absence de correspondance signifie uniquement que les données importées ne permettent pas d’identifier une attribution.
 
-La recherche affiche les données ARCEP séparément des signalements communautaires. Les fichiers locaux préexistants `prefixes.json`, `reports.json` et `repliques.json` ne sont ni remplacés ni nettoyés par la mise à jour.
+La recherche publique doit afficher uniquement les informations de numérotation des référentiels retenus et ne doit pas conserver la saisie dans un historique ou une base. Les fichiers locaux préexistants `prefixes.json`, `reports.json` et `repliques.json` ne sont ni remplacés ni nettoyés par la mise à jour ARCEP. Le fichier `reports.json` est historique et hors du modèle produit cible.

@@ -70,6 +70,7 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   const arcepDir = path.join(dataDir, "arcep");
   const generationDir = path.join(arcepDir, "processed", "test");
   await fs.mkdir(generationDir, { recursive: true });
+  await fs.writeFile(path.join(dataDir, "prefixes.json"), JSON.stringify({ npv_officiels: [] }));
   await fs.writeFile(path.join(generationDir, "index.json"), JSON.stringify([
     { start: "0600000000", end: "0600000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "01/01/2020", resource: "06000" },
   ]));
@@ -88,6 +89,8 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   const found = await fetch(`${base}0600000099`);
   assert.equal(found.status, 200);
   assert.equal((await found.json()).allocation.entityName, "Entité officielle");
+  const localPrefix = await fetch(`http://127.0.0.1:${server.address().port}/api/prefix/0600000099`);
+  assert.equal(localPrefix.status, 404, "a local prefix miss is independent of an existing ARCEP allocation");
   const absent = await fetch(`${base}0600000100`);
   assert.equal((await absent.json()).allocation, null);
   assert.equal((await fetch(`${base}bad`)).status, 400);
