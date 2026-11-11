@@ -1,7 +1,7 @@
 import express from "express";
 import { getDataPath } from "../utils/getDataPath.js";
 import { readJson } from "../utils/jsonStore.js";
-import { normalizeFrenchNumber } from "../utils/reportSchema.js";
+import { normalizeFrenchNumber } from "../utils/phoneNumber.js";
 
 export function createPrefixRouter({ dataPath = getDataPath("prefixes.json") } = {}) {
   const router = express.Router();

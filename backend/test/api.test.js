@@ -71,6 +71,18 @@ test("local prefix lookup uses the longest match and handles absence", async (t)
   assert.equal((await fetch(`${baseUrl}/api/prefix/invalid`)).status, 400);
 });
 
+test("community and retired auxiliary routes are absent", async (t) => {
+  const { baseUrl } = await startApi(t);
+  const removedRoutes = [
+    ["GET", "/api/reports"], ["POST", "/api/reports"],
+    ["GET", "/api/stats"], ["GET", "/api/export-csv"],
+    ["POST", "/api/analyse"], ["GET", "/api/repliques"],
+  ];
+  for (const [method, route] of removedRoutes) {
+    const response = await fetch(`${baseUrl}${route}`, { method });
+    assert.equal(response.status, 404, `${method} ${route} should not be mounted`);
+  }
+});
 
 test("CORS allows local development origins and rejects unrelated browser origins", async (t) => {
   const { baseUrl } = await startApi(t);
@@ -94,3 +106,13 @@ test("JSON request limits and malformed JSON handling remain active", async (t) 
   assert.equal(oversized.status, 413);
 });
 
+test("HTTP access logs retain diagnostics without URL, client IP, or search path", async (t) => {
+  const { baseUrl, logLines } = await startApi(t);
+  const response = await fetch(`${baseUrl}/api/arcep/lookup/private-search-marker`);
+  await response.text();
+  const logs = logLines.join(" ");
+  assert.ok(logLines.length >= 1);
+  assert.match(logs, /GET/);
+  assert.match(logs, /\d{3}/);
+  assert.doesNotMatch(logs, /private-search-marker|127\.0\.0\.1/);
+});

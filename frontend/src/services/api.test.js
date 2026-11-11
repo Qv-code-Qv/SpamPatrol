@@ -1,24 +1,35 @@
-import { getReports, submitReport } from "./api";
+import { getArcepAllocation, getPrefix } from "./api";
 
 describe("API client", () => {
   const originalFetch = global.fetch;
   beforeEach(() => { global.fetch = jest.fn(); });
   afterEach(() => { global.fetch = originalFetch; });
 
-  test("recherche avec le numéro encodé dans la query string", async () => {
-    const payload = { number: "+33601234567", frequency: 0, reports: [] };
+  test("recherche une attribution officielle avec le numéro encodé dans le chemin", async () => {
+    const payload = { allocation: null, source: "ARCEP / MAJNUM" };
     global.fetch.mockResolvedValue({ ok: true, json: async () => payload });
-    await expect(getReports("06 01 23 45 67")).resolves.toEqual(payload);
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/reports?number=06%2001%2023%2045%2067"), {});
+    await expect(getArcepAllocation("06 01 23 45 67")).resolves.toEqual(payload);
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/arcep/lookup/06%2001%2023%2045%2067"), {});
   });
 
-  test("envoie le signalement en JSON et remonte les erreurs de l'API", async () => {
-    const report = { number: "0601234567", category: "Spam", comment: "Appel suspect" };
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => report });
-    await expect(submitReport(report)).resolves.toEqual(report);
-    expect(global.fetch.mock.calls[0][1]).toMatchObject({ method: "POST", body: JSON.stringify(report) });
+  test("consulte séparément le jeu local de préfixes", async () => {
+    const payload = { prefixe: "0162", source: "Jeu local fourni avec SpamPatrol" };
+    global.fetch.mockResolvedValue({ ok: true, json: async () => payload });
+    await expect(getPrefix("06 01 23 45 67")).resolves.toEqual(payload);
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/prefixes/06%2001%2023%2045%2067"), {});
+  });
 
-    global.fetch.mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ message: "Numéro invalide" }) });
-    await expect(submitReport(report)).rejects.toThrow("Numéro invalide");
+  test("remonte le message de validation renvoyé par l’API", async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ message: "Saisissez un numéro de téléphone français valide." }),
+    });
+    await expect(getArcepAllocation("invalide")).rejects.toThrow("Saisissez un numéro de téléphone français valide.");
+  });
+
+  test("présente une erreur explicite si l’API est injoignable", async () => {
+    global.fetch.mockRejectedValue(new Error("connection refused"));
+    await expect(getArcepAllocation("06 01 23 45 67")).rejects.toThrow("Impossible de joindre le serveur");
   });
 });

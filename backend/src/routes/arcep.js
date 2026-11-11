@@ -2,7 +2,7 @@ import express from "express";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeFrenchNumber } from "../utils/reportSchema.js";
+import { normalizeFrenchNumber } from "../utils/phoneNumber.js";
 import { findArcepRange } from "../utils/arcepCsv.js";
 
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../data/arcep");

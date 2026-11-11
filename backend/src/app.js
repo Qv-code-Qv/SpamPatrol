@@ -4,36 +4,18 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { getDataPath } from "./utils/getDataPath.js";
-import { createPrefixRouter } from "./routes/prefix.js";
-import { createReportsRouter } from "./routes/reports.js";
-import { createAnalyseRouter } from "./routes/analyse.js";
-import { createRepliquesRouter } from "./routes/repliques.js";
-import { createStatsRouter } from "./routes/stats.js";
-import { createExportCsvRouter } from "./routes/exportCsv.js";
 import { createArcepRouter } from "./routes/arcep.js";
+import { createPrefixRouter } from "./routes/prefix.js";
 
-function createSubmissionLimiter({ limit = 10, windowMs = 10 * 60 * 1000 } = {}) {
-  const clients = new Map();
-  return (req, res, next) => {
-    if (req.method !== "POST") return next();
-    const now = Date.now();
-    const key = req.ip || req.socket.remoteAddress || "unknown";
-    if (clients.size > 1000) {
-      for (const [clientKey, timestamps] of clients) {
-        if (!timestamps.some((timestamp) => now - timestamp < windowMs)) clients.delete(clientKey);
-      }
-    }
-    const recent = (clients.get(key) || []).filter((timestamp) => now - timestamp < windowMs);
-    if (recent.length >= limit) return res.status(429).json({ message: "Trop de signalements depuis cette adresse. Réessayez plus tard." });
-    recent.push(now);
-    clients.set(key, recent);
-    next();
-  };
+function getSafeErrorDetails(error) {
+  const message = String(error?.message || "Erreur inconnue")
+    .replace(/(?<!\d)(?:\+33|0)(?:[ .()-]*\d){9,10}(?!\d)/g, "[numéro masqué]");
+  return { name: error?.name || "Error", code: error?.code || "UNKNOWN", message };
 }
 
-export function createApp({ dataDir = null, submissionLimit = 10 } = {}) {
+export function createApp({ dataDir = null, logStream = process.stdout } = {}) {
   const app = express();
-  const resolveDataPath = (name) => dataDir ? path.join(dataDir, name) : getDataPath(name);
+  const prefixDataPath = dataDir ? path.join(dataDir, "prefixes.json") : getDataPath("prefixes.json");
   const configuredOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost,http://127.0.0.1")
     .split(",").map((origin) => origin.trim()).filter(Boolean);
 
@@ -47,17 +29,12 @@ export function createApp({ dataDir = null, submissionLimit = 10 } = {}) {
     credentials: false,
   }));
   app.use(express.json({ limit: "16kb", strict: true }));
-  app.use(morgan(process.env.NODE_ENV === "test" ? "tiny" : "dev"));
+  // Deliberately omit URLs and client addresses: phone searches are URL path parameters.
+  app.use(morgan(":method :status :res[content-length] - :response-time ms", { stream: logStream }));
 
-  app.use("/api/prefixes", createPrefixRouter({ dataPath: resolveDataPath("prefixes.json") }));
-  app.use("/api/prefix", createPrefixRouter({ dataPath: resolveDataPath("prefixes.json") }));
+  app.use("/api/prefixes", createPrefixRouter({ dataPath: prefixDataPath }));
+  app.use("/api/prefix", createPrefixRouter({ dataPath: prefixDataPath }));
   app.use("/api/arcep", createArcepRouter({ dataDir: dataDir ? path.join(dataDir, "arcep") : getDataPath("arcep") }));
-  app.use("/api/reports", createSubmissionLimiter({ limit: submissionLimit }));
-  app.use("/api/reports", createReportsRouter({ dataPath: resolveDataPath("reports.json") }));
-  app.use("/api/analyse", createAnalyseRouter());
-  app.use("/api/repliques", createRepliquesRouter({ dataPath: resolveDataPath("repliques.json") }));
-  app.use("/api/stats", createStatsRouter({ dataPath: resolveDataPath("reports.json") }));
-  app.use("/api/export-csv", createExportCsvRouter({ dataPath: resolveDataPath("reports.json") }));
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
   app.use((_req, res) => res.status(404).json({ message: "Route API inconnue." }));
 
@@ -66,7 +43,7 @@ export function createApp({ dataDir = null, submissionLimit = 10 } = {}) {
     if (error instanceof SyntaxError && error.status === 400 && "body" in error) {
       return res.status(400).json({ message: "Le corps doit être un JSON valide." });
     }
-    console.error("Erreur API :", error);
+    console.error("Erreur API :", getSafeErrorDetails(error));
     return res.status(500).json({ message: "Erreur interne du serveur." });
   });
   return app;

@@ -16,17 +16,16 @@
 
 */
 import Dashboard from "views/Dashboard.js";
-import UserProfile from "views/UserProfile.js";
-import TableList from "views/TableList.js";
-import Typography from "views/Typography.js";
-import Icons from "views/Icons.js";
-import Maps from "views/Maps.js";
-import Notifications from "views/Notifications.js";
-import Upgrade from "views/Upgrade.js";
 import Search from "views/Search.js";
-import ReportForm from "components/ReportForm.js";
 
 const dashboardRoutes = [
+  {
+    path: "/dashboard",
+    name: "Observatoire",
+    icon: "nc-icon nc-chart-pie-35",
+    component: Dashboard,
+    layout: "/admin"
+  },
   {
     path: "/search",
     name: "Recherche de numéro",
@@ -34,70 +33,6 @@ const dashboardRoutes = [
     component: Search,
     layout: "/admin"
   },
-  {
-    path: "/dashboard",
-    name: "Tableau de bord",
-    icon: "nc-icon nc-chart-pie-35",
-    component: Dashboard,
-    layout: "/admin"
-  },
-  {
-    path: "/table",
-    name: "Signalements",
-    icon: "nc-icon nc-notes",
-    component: TableList,
-    layout: "/admin"
-  },
-  {
-    path: "/report",
-    name: "Signaler un numéro",
-    icon: "nc-icon nc-simple-add",
-    component: ReportForm,
-    layout: "/admin"
-  },
-  {
-    upgrade: true,
-    path: "/upgrade",
-    name: "Upgrade to PRO",
-    icon: "nc-icon nc-alien-33",
-    component: Upgrade,
-    layout: "/admin"
-  },
-  {
-    path: "/user",
-    name: "User Profile",
-    icon: "nc-icon nc-circle-09",
-    component: UserProfile,
-    layout: "/admin"
-  },
-  {
-    path: "/typography",
-    name: "Typography",
-    icon: "nc-icon nc-paper-2",
-    component: Typography,
-    layout: "/admin"
-  },
-  {
-    path: "/icons",
-    name: "Icons",
-    icon: "nc-icon nc-atom",
-    component: Icons,
-    layout: "/admin"
-  },
-  {
-    path: "/maps",
-    name: "Maps",
-    icon: "nc-icon nc-pin-3",
-    component: Maps,
-    layout: "/admin"
-  },
-  {
-    path: "/notifications",
-    name: "Notifications",
-    icon: "nc-icon nc-bell-55",
-    component: Notifications,
-    layout: "/admin"
-  }
 ];
 
 export default dashboardRoutes;

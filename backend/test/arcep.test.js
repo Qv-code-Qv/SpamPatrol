@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import { createApp } from "../src/app.js";
 import { parseSemicolonCsv, buildArcepIndex, findArcepRange } from "../src/utils/arcepCsv.js";
-import { normalizeFrenchNumber } from "../src/utils/reportSchema.js";
+import { normalizeFrenchNumber } from "../src/utils/phoneNumber.js";
 
 test("CSV parser handles ANSI accents, quoted semicolons, and leading zeroes", () => {
   const csv = Buffer.from([
