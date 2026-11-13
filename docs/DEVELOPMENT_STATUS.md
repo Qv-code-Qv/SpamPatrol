@@ -2,9 +2,9 @@
 
 ## Orientation actuelle
 
-SpamPatrol devient un outil indépendant d’information et d’observation de la numérotation téléphonique française, fondé principalement sur les sources officielles ARCEP/MAJNUM. Le cahier des charges de référence est `cahier_des_charges.docx`. Le PDF historique est conservé comme archive et n’est plus la référence fonctionnelle.
+SpamPatrol est un outil indépendant d’information et d’observation de la numérotation téléphonique française, fondé principalement sur les sources officielles ARCEP/MAJNUM. Le cahier des charges de référence est `cahier_des_charges.docx`. Le PDF historique est conservé comme archive et n’est plus la référence fonctionnelle.
 
-Le code n’est pas encore aligné sur cette orientation : il contient toujours des fonctionnalités communautaires héritées. Elles sont abandonnées dans la vision du projet et doivent être retirées dans une étape technique. Aucune fonction communautaire ne doit être considérée comme une fonctionnalité future.
+Le code actif est recentré sur les recherches officielles et les préfixes locaux. Les fonctionnalités communautaires et leurs fichiers de données ont été retirés de la branche actuelle. Les anciens commits Git peuvent toujours contenir leurs versions ; l’historique n’a pas été réécrit. Aucune fonction communautaire ne doit être considérée comme une fonctionnalité future.
 
 ## Socle technique existant
 
@@ -12,27 +12,21 @@ Le code n’est pas encore aligné sur cette orientation : il contient toujours 
 - Backend Node.js/Express et routes REST.
 - Données locales au format JSON, dont les sources officielles importées et indexées sous `backend/src/data/arcep`.
 - Recherche ARCEP/MAJNUM avec provenance, dates disponibles et avertissements sur les limites d’attribution.
+- Tableau de bord recentré sur l’observation des référentiels officiels disponibles ; il ne présente pas de statistiques inventées.
 - Script d’actualisation ARCEP et tests API associés déjà présents dans le dépôt.
 - Statistiques de consultation prévues : elles ne sont pas encore implémentées et ne doivent compter que les recherches reconnues par MAJNUM.
 
-## Fonctionnalités héritées encore présentes dans le code
+## Données communautaires historiques
 
-Le MVP précédent comprend des routes d’ajout et de consultation des signalements, commentaires, statistiques communautaires, export CSV et écrans associés. Ces fonctions ne font plus partie du produit cible. Leur présence est un écart à corriger, pas une proposition de roadmap. Le comportement exact doit être vérifié pendant le travail de retrait.
-
-## Données historiques à préserver pour le moment
-
-`backend/src/data/reports.json` et les données qui s’y trouvent ne doivent pas être modifiés ni supprimés dans le cadre de cette mise à jour documentaire. Une étape technique distincte doit inventorier les copies, sauvegardes et historiques Git, décider de leur traitement, puis documenter toute suppression. Le retrait des fonctionnalités et celui des données doivent être séparés.
+Les fichiers communautaires ont été supprimés de la branche actuelle selon la décision du projet. Cette action ne retire pas les versions conservées dans l’historique Git, les sauvegardes externes ou d’autres clones. Leur éventuel traitement dans ces emplacements est distinct.
 
 ## Prochaines étapes techniques
 
-1. Retirer côté backend les routes de soumission, recherche, statistiques et export communautaires.
-2. Retirer les appels, formulaires, tableaux, boutons, éléments de navigation et tests propres à ces fonctionnalités du frontend, en préservant le thème et la navigation utiles.
-3. Recentrer le tableau de bord sur les données officielles disponibles ; afficher l’indisponibilité plutôt que d’inventer des indicateurs.
-4. Définir les critères qui rendent une ressource admissible aux statistiques exactes, les catégories/plages exclues, les seuils de publication et les regroupements de repli. Aucun classement exact avant cette décision.
-5. Concevoir un stockage JSON séparé ne contenant que des compteurs agrégés par ressource ou tranche et période. N’enregistrer ni événement individuel, identité, adresse IP, identifiant de session, ni journal contenant le numéro recherché. Un hachage ne suffit pas.
-6. Tester que seules les recherches résolues dans MAJNUM sont comptées, que les absences ne le sont pas, que les compteurs n’incluent aucune donnée de visiteur, et que les statistiques sont identifiées comme propres à SpamPatrol.
-7. Tester la recherche officielle, la provenance, les erreurs, les résultats absents, l’absence de persistance de la saisie et l’absence de routes communautaires.
-8. Faire l’inventaire séparé des données historiques et prendre une décision explicite avant toute suppression.
+1. Définir les critères qui rendent une ressource admissible aux statistiques exactes, les catégories/plages exclues, les seuils de publication et les regroupements de repli. Aucun classement exact avant cette décision.
+2. Concevoir un stockage JSON séparé ne contenant que des compteurs agrégés par ressource ou tranche et période. N’enregistrer ni événement individuel, identité, adresse IP, identifiant de session, ni journal contenant le numéro recherché. Un hachage ne suffit pas.
+3. Implémenter et tester les compteurs uniquement après validation des règles de confidentialité et de publication.
+4. Tester la recherche officielle, la provenance, les erreurs, les résultats absents et l’absence de persistance de la saisie.
+
 
 ## Statistiques de consultation envisagées
 

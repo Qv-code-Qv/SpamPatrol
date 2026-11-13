@@ -1,6 +1,8 @@
 # SpamPatrol
 
-MVP local pour consulter et ajouter des signalements téléphoniques, puis exporter les données. Le frontend utilise React et le backend Express ; les données sont conservées dans des fichiers JSON. Les enregistrements ne sont pas vérifiés et les exemples historiques ne représentent pas des statistiques réelles.
+SpamPatrol est un outil indépendant d’information et d’observation de la numérotation téléphonique française, fondé principalement sur les données officielles ARCEP/MAJNUM. Il permet de consulter les informations disponibles sur les ressources de numérotation. Il n’identifie pas l’utilisateur final d’un numéro et n’est pas affilié ni cautionné par l’ARCEP.
+
+Le frontend utilise React et le backend Node.js/Express. Les référentiels locaux sont conservés sous forme de fichiers JSON et de ressources ARCEP importées. SpamPatrol ne collecte pas de signalements, commentaires, votes ou données communautaires.
 
 ## Installation et démarrage
 
@@ -11,12 +13,12 @@ npm run install:all
 npm start
 ```
 
-`npm start` lance l’API sur `http://localhost:4000` et le frontend Create React App sur `http://localhost:3000`. Pour démarrer séparément : `npm run start:back` ou `npm run start:front`. Le script de démarrage ne lance pas d’installation automatique.
+`npm start` lance l’API sur `http://localhost:4000` et le frontend sur `http://localhost:3000`. Pour démarrer séparément : `npm run start:back` ou `npm run start:front`.
 
 Variables facultatives :
 
 - `PORT` : port du backend (4000 par défaut).
-- `FRONTEND_ORIGIN` : origines frontend autorisées, séparées par des virgules. Les origines localhost usuelles (ports 3000/3001 et port par défaut) sont autorisées par défaut.
+- `FRONTEND_ORIGIN` : origines frontend autorisées, séparées par des virgules.
 - `REACT_APP_API_URL` : URL de l’API, par défaut `http://localhost:4000/api`.
 
 ## Tests et build
@@ -28,18 +30,14 @@ npm run build:front
 
 Les tests backend utilisent `node:test`. Les tests frontend utilisent Jest via Create React App.
 
-## API principale
+## API
 
 - `GET /api/health` : état de l’API.
-- `GET /api/reports` : signalements locaux interprétables.
-- `GET /api/reports?number=06...` : recherche normalisée et fréquence des signalements.
-- `POST /api/reports` : ajout d’un numéro français valide, d’une catégorie et d’un commentaire de 3 à 500 caractères.
-- `GET /api/prefixes/:numero` (alias conservé : `/api/prefix/:numero`) : correspondance dans le jeu de préfixes local.
-- `GET /api/stats`, `GET /api/repliques`, `GET /api/export-csv`.
-- `POST /api/analyse` : résumé local indicatif ; aucune IA, catégorie automatique ou évaluation de risque n’est utilisée.
+- `GET /api/arcep/lookup/:numero` : recherche dans l’index officiel MAJNUM.
+- `GET /api/prefixes/:numero` et `GET /api/prefix/:numero` : consultation du jeu local de préfixes, distinct des ressources officielles MAJNUM.
 
-## Données et limites connues
+## Sources et limites
 
-`backend/src/data/reports.json` contient des éléments historiques hétérogènes. Les routes lisent les signalements structurés et ceux encodés en JSON dans l’ancien champ `query` ; les éléments non interprétables sont conservés dans le fichier et ignorés des recherches, statistiques et exports. Les nouvelles soumissions sont ajoutées avec un identifiant, un numéro E.164, une catégorie, un commentaire et une date. Aucun nettoyage automatique ne réécrit l’historique.
+Les données ARCEP/MAJNUM et leurs dates de mise à jour sont décrites dans [docs/ARCEP.md](docs/ARCEP.md). Une attribution de tranche ne permet pas d’identifier le titulaire ni de garantir l’opérateur actuel après portabilité. Une absence de correspondance dans les données locales n’indique pas qu’un numéro est sûr ou invalide.
 
-Le fichier de préfixes est un jeu local partiel fourni avec le projet ; l’absence de correspondance ne signifie pas qu’un numéro est sûr ou invalide. Le MVP n’a pas de compte utilisateur, de vote, de géolocalisation ni de stockage transactionnel partagé entre plusieurs processus. La limitation de soumissions est en mémoire et par adresse IP.
+Les statistiques de consultation propres à SpamPatrol sont envisagées dans la roadmap, mais ne sont pas implémentées. Aucun classement ou chiffre de consultation ne doit être présenté comme une statistique fournie par l’ARCEP.

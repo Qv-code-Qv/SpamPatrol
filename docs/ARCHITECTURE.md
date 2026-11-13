@@ -2,9 +2,9 @@
 
 ## Orientation de référence
 
-SpamPatrol est un outil indépendant d’information sur la numérotation téléphonique française, fondé principalement sur les données officielles ARCEP/MAJNUM. Le projet ne collecte pas de numéros personnels auprès des visiteurs, ne crée pas de base communautaire et ne publie aucune accusation sur un numéro ou son titulaire. Le cahier des charges de référence est `cahier_des_charges.docx` ; le PDF conservé est une archive historique.
+SpamPatrol est un outil indépendant d’information sur la numérotation téléphonique française, fondé principalement sur les données officielles ARCEP/MAJNUM. La recherche nécessite le traitement temporaire du numéro saisi ; celui-ci n’est pas conservé comme historique individuel. Il ne doit pas apparaître dans les journaux techniques, et aucune identité de visiteur ni adresse IP ne doit être associée à un historique ou à un compteur de recherche. Ces mesures ne signifient pas qu’aucun traitement de données personnelles n’a lieu au sens juridique. Le projet ne crée pas de base communautaire et ne publie aucune accusation sur un numéro ou son titulaire. Le cahier des charges de référence est `cahier_des_charges.docx` ; le PDF conservé est une archive historique.
 
-**Écart entre le code et la cible :** le MVP contient encore des routes et écrans communautaires. Ils sont abandonnés dans la vision produit, mais ne sont pas encore retirés du code. Cette documentation ne signifie pas que l’application est déjà alignée. La suppression fonctionnelle et le traitement des données historiques sont deux travaux distincts.
+Les fonctionnalités communautaires et leurs routes ont été retirées du code actif. Les fichiers de données communautaires ont également été supprimés de la branche actuelle ; leurs versions peuvent rester dans l’historique Git, qui n’a pas été réécrit.
 
 ## Stack et flux officiels
 
@@ -18,7 +18,7 @@ Les données officielles sont importées et indexées séparément sous `backend
 
 ## Recherche
 
-La recherche valide et normalise un numéro français uniquement pour consulter les référentiels retenus. La saisie ne doit être ni conservée dans un historique, un fichier, une base ou un journal d’accès qui permet de retrouver le numéro. La réponse peut présenter la tranche, l’attributaire déclaré, le territoire et les dates disponibles, ainsi que la source.
+La recherche valide et normalise le numéro français saisi, qui est nécessairement traité temporairement pour consulter les référentiels retenus. Il n’est pas conservé comme historique individuel dans un fichier ou une base et ne doit pas être inscrit dans les journaux techniques. Aucune identité de visiteur ni adresse IP ne doit être associée à l’historique ou aux compteurs de recherche. La réponse peut présenter la tranche, l’attributaire déclaré, le territoire et les dates disponibles, ainsi que la source.
 
 Une attribution de tranche ne révèle pas l’utilisateur final et ne garantit pas l’opérateur actuel après portabilité. Une absence de correspondance dans l’index local ne prouve ni que le numéro n’existe pas, ni qu’il est fiable.
 
@@ -29,18 +29,11 @@ Une attribution de tranche ne révèle pas l’utilisateur final et ne garantit 
 | `GET /api/health` | Vérification du serveur |
 | `GET /api/arcep/lookup/:numero` | Recherche officielle MAJNUM avec provenance, date et limites |
 | `GET /api/prefixes/:numero` et `GET /api/prefix/:numero` | Recherche dans le jeu local de préfixes ; sa provenance doit être clairement indiquée |
-| `GET /api/repliques` | Répliques génériques locales, si conservées et sans lien avec un numéro particulier |
-| `GET /api/search-stats` (à concevoir) | Agrégats de consultations SpamPatrol, après règles d’éligibilité et de confidentialité |
-
-## Routes communautaires héritées à retirer
-
-Le code actuel monte encore `GET /api/reports`, `GET /api/reports?number=…`, `POST /api/reports`, `GET /api/stats` fondée sur les signalements et `GET /api/export-csv`. Ces routes lisent, exposent, agrègent, exportent ou écrivent des données communautaires. Elles ne font plus partie de l’architecture cible et doivent être retirées ou neutralisées côté backend lors d’une étape technique dédiée. Masquer une page React ne protège pas un accès direct à l’API.
-
-`POST /api/analyse` est une simulation héritée qui accepte et renvoie un numéro et un texte sans persistance. Elle ne fait pas partie du cœur du projet ; son maintien doit être évalué lors du retrait des fonctions héritées pour éviter de demander une donnée inutile aux visiteurs.
+| `GET /api/search-stats` (évolution future ; aucun endpoint actuellement implémenté) | Agrégats de consultations SpamPatrol, après règles d’éligibilité et de confidentialité |
 
 ## Données communautaires historiques
 
-`backend/src/data/reports.json` ne fait plus partie du modèle de données cible. Le fichier et ses données doivent rester inchangés pour le moment. Le code historique contient des formats non uniformes et une normalisation de lecture ; la future suppression des routes ne doit pas réécrire le fichier. Une étape séparée doit inventorier les copies et sauvegardes, décider de leur traitement, puis documenter toute suppression.
+Les fichiers de données communautaires ne sont plus présents dans la branche actuelle et ne font pas partie du modèle de données. Leurs versions peuvent subsister dans les commits historiques, les sauvegardes externes ou d’autres clones ; la suppression de la branche actuelle ne les efface pas de ces emplacements.
 
 ## Tableau de bord observatoire
 
