@@ -4,7 +4,7 @@
 
 SpamPatrol est un outil indépendant d’information, d’observation et de compréhension de la numérotation téléphonique française. Il privilégie les données officielles de l’ARCEP, notamment MAJNUM, et vise une maintenance simple par une seule personne. Le cahier des charges de référence est `cahier_des_charges.docx`; le PDF conservé est une archive historique.
 
-Le Dashboard actif est actuellement une page informative statique : il ne charge pas de données, ne calcule pas d’indicateurs et ne rend aucun graphique. La page de recherche consulte séparément MAJNUM et le jeu local de préfixes. Aucun endpoint de synthèse de l’observatoire, de statistique de consultation ou d’activité communautaire n’est actuellement implémenté.
+Le Dashboard actif consulte `GET /api/arcep/summary`. Il affiche le total des enregistrements de ressources/tranches et une répartition en barres responsive selon les libellés de territoire MAJNUM. Aucun endpoint de statistique de consultation ou d’activité communautaire n’est implémenté. La page de recherche consulte séparément MAJNUM et le jeu local de préfixes.
 
 Les fonctionnalités communautaires ont été retirées du code actif et ne font pas partie de la cible. Les statistiques de consultation restent facultatives et futures; elles sont distinctes des données officielles et ne peuvent être conçues qu’après validation des règles de confidentialité du cahier des charges.
 
@@ -15,9 +15,11 @@ Les fonctionnalités communautaires ont été retirées du code actif et ne font
 - **Données** : fichiers JSON locaux; aucun stockage SQL n’est prévu pour le périmètre actuel.
 - **Client API** : `frontend/src/services/api.js`, configuré par `REACT_APP_API_URL` (par défaut `http://localhost:4000/api`).
 - **Sécurité serveur** : Helmet, limite JSON de 16 Ko, CORS configuré et journal Morgan qui exclut volontairement l’URL et l’adresse IP.
-- **Graphiques** : Chartist et `react-chartist` figurent parmi les dépendances du template, mais aucun graphique n’est actuellement utilisé par le Dashboard routé.
+- **Graphique territorial** : barres Bootstrap construites depuis l’agrégat compact de l’API; aucune dépendance graphique supplémentaire n’est utilisée.
 
-Les routes actuelles comprennent `GET /api/arcep/lookup/:numero`, les recherches du jeu local `/api/prefix/:numero` et `/api/prefixes/:numero`, ainsi que `/api/health`. Les recherches valident et normalisent temporairement la saisie. La réponse ARCEP fournit la valeur normalisée au client, la tranche trouvée ou l’absence de correspondance, l’attributaire déclaré, le territoire, la date d’attribution, la source et les dates disponibles.
+Les routes actuelles comprennent `GET /api/arcep/lookup/:numero`, `GET /api/arcep/summary`, les recherches du jeu local `/api/prefix/:numero` et `/api/prefixes/:numero`, ainsi que `/api/health`. Les recherches valident et normalisent temporairement la saisie. La réponse ARCEP fournit la valeur normalisée au client, la tranche trouvée ou l’absence de correspondance, l’attributaire déclaré, le territoire, la date d’attribution, la source et les dates disponibles.
+
+La route de synthèse compte les objets de l’index traité et vérifie l’égalité avec `counts.allocations` et `sources.MAJNUM.rows`. Elle retourne uniquement le résumé, les métadonnées utiles et les agrégats; l’index complet n’est pas transmis au navigateur. `territoryDistribution` regroupe par valeur exacte de `territory`, calcule les parts sur le total et vérifie la somme des effectifs. Les libellés distincts ne sont pas fusionnés; les valeurs absentes/vides et invalides ont des catégories explicites. L’endpoint renvoie une indisponibilité si les comptes du résumé principal ne concordent pas.
 
 Le traitement de recherche ne crée aucun fichier ni historique. Les métadonnées officielles et l’index sont lus depuis `backend/src/data/arcep`. Le jeu local `backend/src/data/prefixes.json` est lu séparément et sa provenance externe n’est pas documentée dans ce fichier.
 
@@ -31,9 +33,9 @@ Une seule génération traitée est présente actuellement dans le dépôt. Les 
 
 ## Architecture cible du Dashboard
 
-La première évolution doit calculer des indicateurs à partir des fichiers déjà présents : nombre d’enregistrements de ressources/tranches, codes attributaires distincts, agrégations par territoire et code, cohortes par date d’effet et affichage des métadonnées de l’instantané. Ces calculs ne sont pas encore exposés par une route et ne sont pas présents dans l’interface.
+Le total des enregistrements et la répartition par territoire sont implémentés dans l’API et le Dashboard. Restent à calculer et valider les codes attributaires distincts, les répartitions par code et les cohortes par date d’effet à partir des fichiers présents.
 
-Avant de créer une API de synthèse, définir pour chaque indicateur l’unité, le périmètre, la méthode, la source et les limites. Le backend devrait agréger les données et retourner un objet compact, plutôt que transmettre tout l’index MAJNUM au navigateur. Les agrégations devront être déterministes et couvertes par des tests portant sur les unités et les cas limites.
+Pour tout nouvel indicateur, définir l’unité, le périmètre, la méthode, la source et les limites. Le backend agrège les données et retourne un objet compact plutôt que de transmettre tout l’index MAJNUM au navigateur. Les agrégations doivent rester déterministes et couvertes par des tests portant sur les unités et les cas limites.
 
 Les répartitions par catégories officielles nécessitent une classification documentée et versionnée qui ne figure pas dans MAJNUM. Les analyses historiques nécessitent plusieurs instantanés datés et comparables. Les ressources gelées, les informations de portabilité et les numéros courts nécessitent l’étude et l’intégration contrôlée de sources officielles complémentaires.
 

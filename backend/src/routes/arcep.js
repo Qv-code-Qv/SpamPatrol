@@ -7,6 +7,45 @@ import { findArcepRange } from "../utils/arcepCsv.js";
 
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../data/arcep");
 
+function buildTerritoryDistribution(index) {
+  const groups = new Map();
+  for (const record of index) {
+    const value = record && typeof record === "object" ? record.territory : undefined;
+    let kind = "value";
+    let territory = value;
+    let label = value;
+    if (typeof value !== "string") {
+      kind = value == null ? "missing" : "invalid";
+      territory = null;
+      label = kind === "missing" ? "Valeur absente ou vide" : "Valeur de territoire invalide";
+    } else if (!value.trim()) {
+      kind = "missing";
+      territory = null;
+      label = "Valeur absente ou vide";
+    }
+    const key = JSON.stringify([kind, territory]);
+    const group = groups.get(key) || { kind, territory, label, count: 0 };
+    group.count += 1;
+    groups.set(key, group);
+  }
+
+  const totalRecords = index.length;
+  const entries = [...groups.values()]
+    .sort((left, right) => left.label.localeCompare(right.label, "fr"))
+    .map((group) => ({
+      ...group,
+      sharePercent: totalRecords ? (group.count / totalRecords) * 100 : 0,
+    }));
+  const groupedCount = entries.reduce((total, entry) => total + entry.count, 0);
+  if (groupedCount !== totalRecords) throw new Error("La répartition par territoire ne correspond pas au total MAJNUM.");
+
+  return {
+    totalRecords,
+    entries,
+    method: "Chaque enregistrement est regroupé sous son libellé exact de territoire. Les valeurs absentes, vides ou invalides sont comptées séparément; chaque part est calculée sur le total des enregistrements.",
+  };
+}
+
 export function createArcepRouter({ dataDir = DEFAULT_ROOT } = {}) {
   const router = express.Router();
   let cachedGeneration = null;
@@ -48,6 +87,7 @@ export function createArcepRouter({ dataDir = DEFAULT_ROOT } = {}) {
         recordCount,
         unit: "enregistrements de ressources ou de tranches",
         method: "Nombre d’objets de l’index MAJNUM préparé par l’application, comparé aux deux nombres d’enregistrements indiqués dans les métadonnées.",
+        territoryDistribution: buildTerritoryDistribution(index),
       });
     } catch (error) {
       if (error.code === "ENOENT") {

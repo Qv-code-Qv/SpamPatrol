@@ -28,27 +28,18 @@ describe("Dashboard observatory", () => {
     );
   }
 
-  test("explains the observatory purpose and directs detailed number information to search", () => {
+  test("keeps the Dashboard structure, short copy, and number search link", () => {
     const markup = renderDashboard();
     const text = markup.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
 
     expect(markup).toContain("container-fluid");
     expect(markup).toContain("Observatoire de la numérotation");
-    expect(text).toMatch(/objectif de SpamPatrol.*principes de l’observatoire/i);
-    expect(text).toMatch(/recherche.*informations détaillées sur la numérotation/i);
-    expect(text).toMatch(/recherche permet de consulter les tranches.*à partir des données ARCEP\/MAJNUM/i);
-    expect(text).not.toMatch(/pour présenter les tranches de numérotation/i);
-    expect(markup).toContain("ARCEP/MAJNUM");
+    expect(markup).toContain("Ressources de numérotation recensées");
+    expect(text).toMatch(/Comprendre les informations publiques sur la numérotation téléphonique/);
+    expect(text).toContain("La recherche présente les informations disponibles sur un numéro.");
     expect(markup).toContain('href="/admin/search"');
     expect(text).toContain("Rechercher un numéro");
-    expect(markup).toContain("Les statistiques de consultation ne sont pas encore disponibles");
-  });
-
-  test("states that official data, sources, and dates appear in search results, not on the dashboard", () => {
-    const text = renderDashboard().replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
-
-    expect(text).toMatch(/données officielles ARCEP\/MAJNUM.*sources.*dates disponibles.*résultats de recherche/i);
-    expect(text).toMatch(/non directement sur ce tableau de bord/i);
+    expect(text).toContain("Les statistiques de consultation ne sont pas affichées.");
   });
 
   test("does not present community content or unsupported numerical statistics", () => {
@@ -57,7 +48,7 @@ describe("Dashboard observatory", () => {
 
     expect(text).not.toMatch(/signalement|commentaire|top 10|export CSV|réplique|numéros les plus signalés/i);
     expect(text).not.toMatch(/\b\d+\b/);
-    expect(text).toMatch(/statistiques de consultation ne sont pas encore disponibles/i);
+    expect(text).toMatch(/statistiques de consultation ne sont pas affichées/i);
     expect(markup).toContain('href="/admin/search"');
   });
 
@@ -71,7 +62,7 @@ describe("Dashboard observatory", () => {
     return container.textContent.replace(/\s+/g, " ");
   }
 
-  test("shows a count returned by the API with the snapshot source, dates, version, and method", async () => {
+  test("shows the API total, source, and publication date without technical details", async () => {
     const text = await renderDashboardWithSummary({
       source: "ARCEP – MAJNUM",
       sourceUrl: "https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique",
@@ -85,36 +76,68 @@ describe("Dashboard observatory", () => {
 
     expect(getArcepSummary).toHaveBeenCalledTimes(1);
     expect(text).toContain("2 345");
-    expect(text).toContain("enregistrements de ressources ou de tranches");
-    expect(text).toContain("ARCEP – MAJNUM");
+    expect(text).toContain("Ressources ou tranches recensées.");
+    expect(text).toContain("Données officielles de l’ARCEP");
     expect(container.querySelector('a[href="https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique"]')).not.toBeNull();
-    expect(text).toContain("19/10/2026");
-    expect(text).toContain("generation-test-123");
-    expect(text).toContain("Méthode de calcul : Nombre d’objets de l’index MAJNUM préparé par l’application");
-    expect(text).toContain("La date d’activation locale ne prouve pas une synchronisation");
+    expect(text).toContain("Publication : 19/10/2026");
+    expect(text).toContain("Ce chiffre ne représente pas le nombre de lignes téléphoniques en service.");
+    expect(text).not.toContain("generation-test-123");
+    expect(text).not.toMatch(/MAJNUM|JSON|index|instantané|génération|SHA-?256|activation locale|méthode de calcul/i);
     expect(text).not.toContain("20 931");
   });
 
-  test("explains the count and its interpretation limits in accessible language", async () => {
+  test("renders the territory distribution with concise explanation, values, and limit", async () => {
     const text = await renderDashboardWithSummary({
-      source: "ARCEP – MAJNUM", recordCount: 3, unit: "enregistrements de ressources ou de tranches",
+      source: "ARCEP – MAJNUM",
+      sourceUrl: "https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique",
+      publishedDate: "2026-10-19",
+      activatedAt: "2026-10-19T15:35:37.769Z",
+      recordCount: 6,
+      unit: "enregistrements de ressources ou de tranches",
+      territoryDistribution: {
+        totalRecords: 6,
+        method: "Chaque enregistrement est regroupé sous son libellé exact de territoire.",
+        entries: [
+          { kind: "value", territory: "MÉTROPOLE", label: "MÉTROPOLE", count: 1, sharePercent: 100 / 6 },
+          { kind: "value", territory: "Métropole", label: "Métropole", count: 2, sharePercent: 200 / 6 },
+          { kind: "missing", territory: null, label: "Valeur absente ou vide", count: 2, sharePercent: 200 / 6 },
+          { kind: "invalid", territory: null, label: "Valeur de territoire invalide", count: 1, sharePercent: 100 / 6 },
+        ],
+      },
     });
 
-    expect(text).toContain("Que représente ce chiffre ?");
-    expect(text).toContain("Une ressource ou une tranche correspond à une portion de numérotation");
-    expect(text).toContain("À retenir : une ressource attribuée n’est pas nécessairement utilisée.");
-    expect(text).toContain("Ce que ce chiffre ne représente pas");
-    expect(text).toMatch(/ne mesure ni le nombre de personnes, d’abonnés, de lignes actives, d’appels, de numéros utilisés ou de clients d’un opérateur/i);
+    expect(text).toContain("Répartition par territoire");
+    expect(text).toContain("Part des ressources recensées pour chaque territoire déclaré");
+    expect(text).toContain("MÉTROPOLE");
+    expect(text).toContain("Métropole");
+    expect(text).toContain("Valeur absente ou vide");
+    expect(text).toContain("Valeur de territoire invalide");
+    expect(text).toContain("2 (33,33 %)");
+    expect(text).toContain("1 (16,67 %)");
+    expect(text).toContain("Total : 6 ressources recensées.");
+    expect(text).toContain("À retenir : les libellés distincts restent séparés.");
+    expect(text).toContain("Le territoire déclaré ne localise pas nécessairement l’appelant ou l’utilisateur.");
+    expect(text).not.toMatch(/MAJNUM|JSON|index|instantané|génération|SHA-?256|méthode de calcul/i);
+    expect(container.querySelectorAll(".progress-bar")).toHaveLength(4);
+    expect(container.querySelector('a[href="https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique"]')).not.toBeNull();
   });
 
-  test("shows unavailable metadata and a clear state when the summary cannot be loaded", async () => {
+  test("does not show a territory chart when the API distribution total is inconsistent", async () => {
+    const text = await renderDashboardWithSummary({
+      source: "ARCEP – MAJNUM", recordCount: 2, unit: "enregistrements de ressources ou de tranches",
+      territoryDistribution: { totalRecords: 1, entries: [{ label: "Métropole", count: 1, sharePercent: 100 }] },
+    });
+
+    expect(text).toContain("La répartition est momentanément indisponible.");
+    expect(container.querySelectorAll(".progress-bar")).toHaveLength(0);
+  });
+
+  test("shows an unavailable publication date and a short error when data cannot be loaded", async () => {
     const availableText = await renderDashboardWithSummary({
       source: "ARCEP – MAJNUM", recordCount: 1, unit: "enregistrements de ressources ou de tranches",
       publishedDate: null, activatedAt: null, snapshotVersion: null,
     });
-    expect(availableText).toContain("Publication associée : Non indiquée");
-    expect(availableText).toContain("Activation locale : Non indiquée");
-    expect(availableText).toContain("Non indiqué");
+    expect(availableText).toContain("Publication : Non indiquée");
 
     act(() => root.unmount());
     root = null;
@@ -124,7 +147,7 @@ describe("Dashboard observatory", () => {
     await act(async () => {
       root.render(<MemoryRouter><Dashboard /></MemoryRouter>);
     });
-    expect(container.textContent).toContain("les données locales n’ont pas pu être vérifiées");
+    expect(container.textContent).toContain("Les données officielles ne sont pas disponibles pour le moment.");
     expect(container.textContent).not.toContain("2 345");
   });
 });

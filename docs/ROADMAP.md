@@ -8,7 +8,7 @@ Le cahier des charges de référence est `cahier_des_charges.docx`. Le PDF conse
 
 ## État de départ
 
-La recherche ARCEP/MAJNUM et la recherche du jeu local de préfixes existent. Le Dashboard actif reste statique : il n’appelle pas l’API et ne présente pas de données, graphiques ou indicateurs calculés. Les données locales comprennent un instantané MAJNUM publié le 2026-10-19, une liste Identifiants CE et un jeu local de 17 préfixes. Une seule génération MAJNUM traitée est présente; l’historique des ressources n’est donc pas calculable à ce stade.
+La recherche ARCEP/MAJNUM et la recherche du jeu local de préfixes existent. Le Dashboard affiche le total calculé de l’instantané et la répartition par territoire déclaré, avec explications pédagogiques. L’API ne transmet pas l’index complet. Les données locales comprennent un instantané MAJNUM publié le 2026-10-19, une liste Identifiants CE et un jeu local de 17 préfixes. Une seule génération MAJNUM traitée est présente; l’historique des ressources n’est donc pas calculable à ce stade.
 
 ## Ordre de développement
 
@@ -18,23 +18,25 @@ Chaque phase doit être achevée, documentée et vérifiée avant de commencer l
 
 Priorité immédiate. Ne pas chercher de nouvelles sources avant d’avoir livré et vérifié les premiers indicateurs disponibles dans l’instantané local.
 
-1. Vérifier les métadonnées, empreintes, comptes, champs, unités et limites de l’index MAJNUM existant.
-2. Définir et tester les calculs : total de lignes de ressources/tranches, codes attributataires distincts, agrégations par territoire et code, distribution des dates d’effet parmi les ressources de l’instantané.
-3. Distinguer `publishedDate`, `activatedAt` et toute future vérification en ligne; ne jamais appeler `activatedAt` une dernière synchronisation.
-4. Concevoir une API de synthèse compacte si elle est nécessaire. Ne pas envoyer l’index entier au navigateur.
-5. Vérifier les unités, résultats, cas limites et tests; faire examiner le résultat avant la phase 2.
+1. **Réalisé pour le total et le territoire :** vérifier métadonnées, comptes, champs, unités et limites; la somme des effectifs territoriaux correspond au nombre d’enregistrements.
+2. **Partiellement réalisé :** le total et les effectifs par libellé exact sont calculés et testés. Restent les codes attributaires distincts, répartitions par code et dates d’effet.
+3. **Réalisé pour le résumé actuel :** distinguer `publishedDate` et `activatedAt`; ne pas présenter l’activation comme une dernière synchronisation.
+4. **Réalisé :** l’API de synthèse compacte est disponible et ne transmet pas l’index entier.
+5. Vérifier les indicateurs restants et faire examiner leurs unités, résultats, cas limites et tests avant de les intégrer.
 
 **Critère de fin :** chaque indicateur possède une source, une méthode reproductible, une unité exacte et une description de ce qu’il ne mesure pas. Aucun indicateur n’est publié si ces éléments manquent.
 
 ### Phase 2 — Premier Dashboard enrichi
 
-1. Afficher la provenance et les dates locales de l’instantané avec leur signification exacte.
-2. Intégrer uniquement les agrégats vérifiés de la phase 1.
-3. Ajouter des visualisations accessibles et complémentaires, avec explications pédagogiques, méthode, unité, périmètre et limites.
+1. **Réalisé pour le premier résumé :** afficher source, publication associée, activation locale, total et méthode.
+2. **Réalisé pour le territoire :** afficher les libellés, effectifs et parts avec un total de référence.
+3. Ajouter les autres visualisations seulement après validation de chaque agrégat de phase 1, avec explications, méthode, unité, périmètre et limites.
 4. Préserver le template Light Bootstrap Dashboard, les couleurs, la navigation, la disposition et le responsive.
 5. Tester les valeurs affichées, les états d’erreur et l’absence de données inventées.
 
 **Critère de fin :** le Dashboard montre le contenu réel de l’instantané sans le présenter comme un nombre d’abonnés, d’appels, de lignes actives ou d’utilisateurs.
+
+La phase 1 et l’enrichissement initial du Dashboard restent en cours tant que les agrégats restants n’ont pas été définis, calculés, testés et vérifiés.
 
 ### Phase 3 — Classification réglementaire officielle
 

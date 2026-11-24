@@ -73,6 +73,20 @@ test("downloaded ARCEP snapshots match their provenance hashes and active counts
     assert.match(summary.unit, /enregistrements de ressources ou de tranches/);
     assert.equal("index" in summary, false, "the API must not send the full MAJNUM index");
     assert.equal("allocations" in summary, false, "the API returns only its summary");
+    const distribution = summary.territoryDistribution;
+    assert.equal(distribution.totalRecords, index.length);
+    assert.match(distribution.method, /libellé exact de territoire/);
+    assert.equal(distribution.entries.reduce((sum, entry) => sum + entry.count, 0), index.length);
+    const expectedTerritories = new Map();
+    for (const record of index) {
+      const territory = typeof record.territory === "string" && record.territory.trim()
+        ? record.territory : "Valeur absente ou vide";
+      expectedTerritories.set(territory, (expectedTerritories.get(territory) || 0) + 1);
+    }
+    assert.deepEqual(
+      Object.fromEntries(distribution.entries.map((entry) => [entry.label, entry.count])),
+      Object.fromEntries(expectedTerritories),
+    );
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
@@ -87,12 +101,18 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   await fs.writeFile(path.join(dataDir, "prefixes.json"), JSON.stringify({ npv_officiels: [] }));
   await fs.writeFile(path.join(generationDir, "index.json"), JSON.stringify([
     { start: "0600000000", end: "0600000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "01/01/2020", resource: "06000" },
+    { start: "0610000000", end: "0610000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "01/01/2020", resource: "06100" },
+    { start: "0620000000", end: "0620000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "MÉTROPOLE", allocationDate: "01/01/2020", resource: "06200" },
+    { start: "0630000000", end: "0630000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: null, allocationDate: "01/01/2020", resource: "06300" },
+    { start: "0640000000", end: "0640000099", allocationCode: "ABCD", entityName: "Entité officielle", allocationDate: "01/01/2020", resource: "06400" },
+    { start: "0650000000", end: "0650000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: 42, allocationDate: "01/01/2020", resource: "06500" },
+    { start: "0660000000", end: "0660000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "   ", allocationDate: "01/01/2020", resource: "06600" },
   ]));
   const metadataPath = path.join(arcepDir, "metadata.json");
   const metadata = {
     generation: "test", indexFile: "processed/test/index.json", activatedAt: "2026-10-19T00:00:00.000Z",
-    counts: { allocations: 1 },
-    sources: { MAJNUM: { attribution: "Source ARCEP test", rows: 1, publishedDate: "2026-10-19", datasetUrl: "https://example.invalid/majnum" } },
+    counts: { allocations: 7 },
+    sources: { MAJNUM: { attribution: "Source ARCEP test", rows: 7, publishedDate: "2026-10-19", datasetUrl: "https://example.invalid/majnum" } },
     limits: ["Numéro porté non identifié."],
   };
   await fs.writeFile(metadataPath, JSON.stringify(metadata));
@@ -117,12 +137,20 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   const summaryResponse = await fetch(summaryUrl);
   assert.equal(summaryResponse.status, 200);
   const summary = await summaryResponse.json();
-  assert.equal(summary.recordCount, 1);
+  assert.equal(summary.recordCount, 7);
   assert.equal(summary.publishedDate, "2026-10-19");
   assert.equal(summary.snapshotVersion, "test");
   assert.equal(summary.sourceUrl, "https://example.invalid/majnum");
+  assert.equal(summary.territoryDistribution.totalRecords, 7);
+  assert.match(summary.territoryDistribution.method, /valeurs absentes, vides ou invalides/);
+  assert.deepEqual(
+    Object.fromEntries(summary.territoryDistribution.entries.map((entry) => [entry.label, entry.count])),
+    { "MÉTROPOLE": 1, "Métropole": 2, "Valeur absente ou vide": 3, "Valeur de territoire invalide": 1 },
+  );
+  assert.equal(summary.territoryDistribution.entries.find((entry) => entry.label === "Métropole").sharePercent, (2 / 7) * 100);
+  assert.equal(summary.territoryDistribution.entries.reduce((sum, entry) => sum + entry.count, 0), summary.recordCount);
 
-  metadata.counts.allocations = 2;
+  metadata.counts.allocations = 8;
   await fs.writeFile(metadataPath, JSON.stringify(metadata));
   const inconsistent = await fetch(summaryUrl);
   assert.equal(inconsistent.status, 503);
