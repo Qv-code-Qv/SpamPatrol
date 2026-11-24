@@ -4,7 +4,7 @@
 
 SpamPatrol est un outil indépendant d’information, d’observation et de compréhension de la numérotation téléphonique française. Il privilégie les données officielles de l’ARCEP, notamment MAJNUM, et vise une maintenance simple par une seule personne. Le cahier des charges de référence est `cahier_des_charges.docx`; le PDF conservé est une archive historique.
 
-Le Dashboard actif consulte `GET /api/arcep/summary`. Il affiche le total des enregistrements de ressources/tranches et une répartition en barres responsive selon les libellés de territoire MAJNUM. Aucun endpoint de statistique de consultation ou d’activité communautaire n’est implémenté. La page de recherche consulte séparément MAJNUM et le jeu local de préfixes.
+Le Dashboard actif consulte `GET /api/arcep/summary`. Il affiche le total des enregistrements de ressources/tranches et des répartitions responsive en barres par territoire MAJNUM et par code d’attribution. Pour le code, les dix groupes les plus nombreux sont visibles d’emblée; les autres restent consultables sans être fusionnés. Aucun endpoint de statistique de consultation ou d’activité communautaire n’est implémenté. La page de recherche consulte séparément MAJNUM et le jeu local de préfixes.
 
 Les fonctionnalités communautaires ont été retirées du code actif et ne font pas partie de la cible. Les statistiques de consultation restent facultatives et futures; elles sont distinctes des données officielles et ne peuvent être conçues qu’après validation des règles de confidentialité du cahier des charges.
 
@@ -15,17 +15,17 @@ Les fonctionnalités communautaires ont été retirées du code actif et ne font
 - **Données** : fichiers JSON locaux; aucun stockage SQL n’est prévu pour le périmètre actuel.
 - **Client API** : `frontend/src/services/api.js`, configuré par `REACT_APP_API_URL` (par défaut `http://localhost:4000/api`).
 - **Sécurité serveur** : Helmet, limite JSON de 16 Ko, CORS configuré et journal Morgan qui exclut volontairement l’URL et l’adresse IP.
-- **Graphique territorial** : barres Bootstrap construites depuis l’agrégat compact de l’API; aucune dépendance graphique supplémentaire n’est utilisée.
+- **Graphiques territorial et par code** : barres Bootstrap construites depuis les agrégats compacts de l’API; aucune dépendance graphique supplémentaire n’est utilisée.
 
 Les routes actuelles comprennent `GET /api/arcep/lookup/:numero`, `GET /api/arcep/summary`, les recherches du jeu local `/api/prefix/:numero` et `/api/prefixes/:numero`, ainsi que `/api/health`. Les recherches valident et normalisent temporairement la saisie. La réponse ARCEP fournit la valeur normalisée au client, la tranche trouvée ou l’absence de correspondance, l’attributaire déclaré, le territoire, la date d’attribution, la source et les dates disponibles.
 
-La route de synthèse compte les objets de l’index traité et vérifie l’égalité avec `counts.allocations` et `sources.MAJNUM.rows`. Elle retourne uniquement le résumé, les métadonnées utiles et les agrégats; l’index complet n’est pas transmis au navigateur. `territoryDistribution` regroupe par valeur exacte de `territory`, calcule les parts sur le total et vérifie la somme des effectifs. Les libellés distincts ne sont pas fusionnés; les valeurs absentes/vides et invalides ont des catégories explicites. L’endpoint renvoie une indisponibilité si les comptes du résumé principal ne concordent pas.
+La route de synthèse compte les objets de l’index traité et vérifie l’égalité avec `counts.allocations` et `sources.MAJNUM.rows`. Elle retourne uniquement le résumé, les métadonnées utiles et les agrégats; l’index complet n’est pas transmis au navigateur. `territoryDistribution` regroupe par valeur exacte de `territory`; `allocationCodeDistribution` regroupe par valeur exacte de `allocationCode`. Les deux calculent les parts sur le total, vérifient la somme des effectifs et conservent les libellés ou codes distincts. Pour les codes, les valeurs absentes, vides et non textuelles sont comptées séparément; les codes textuels inconnus sont conservés tels quels. L’endpoint renvoie une indisponibilité si les comptes du résumé principal ne concordent pas.
 
 Le traitement de recherche ne crée aucun fichier ni historique. Les métadonnées officielles et l’index sont lus depuis `backend/src/data/arcep`. Le jeu local `backend/src/data/prefixes.json` est lu séparément et sa provenance externe n’est pas documentée dans ce fichier.
 
 ## Sources et structure locales
 
-L’instantané actif contient MAJNUM et Identifiants CE. Le traitement transforme chaque ligne MAJNUM en un enregistrement comprenant `start`, `end`, `allocationCode`, `entityName`, `territory`, `allocationDate` et `resource`. Le rapprochement entre MAJNUM et Identifiants CE se fait par égalité exacte du code. Les champs bruts de MAJNUM ne comprennent pas de catégorie réglementaire normalisée, d’état de disponibilité, d’usage observé ou de mesure d’appels.
+L’instantané actif contient MAJNUM et Identifiants CE. Le traitement transforme chaque ligne MAJNUM en un enregistrement comprenant `start`, `end`, `allocationCode`, `entityName`, `territory`, `allocationDate` et `resource`. `allocationCode` reprend la valeur `Mnémo` de MAJNUM après suppression des espaces périphériques; cette valeur identifie l’attributaire dans le référentiel. Le rapprochement avec `CODE_OPERATEUR` d’Identifiants CE est une égalité exacte. Le Dashboard affiche le code brut et ne le présente pas comme l’opérateur actuel. Les champs bruts de MAJNUM ne comprennent pas de catégorie réglementaire normalisée, d’état de disponibilité, d’usage observé ou de mesure d’appels.
 
 `metadata.json` décrit la génération, les sources, leurs empreintes, tailles, comptes de lignes, dates de publication, licence et limites. `activatedAt` indique l’activation locale de la génération; ce n’est ni la date de dernière vérification de la source ni une preuve de synchronisation en ligne. Une comparaison à la source actuelle nécessite un contrôle distinct.
 
@@ -33,7 +33,7 @@ Une seule génération traitée est présente actuellement dans le dépôt. Les 
 
 ## Architecture cible du Dashboard
 
-Le total des enregistrements et la répartition par territoire sont implémentés dans l’API et le Dashboard. Restent à calculer et valider les codes attributaires distincts, les répartitions par code et les cohortes par date d’effet à partir des fichiers présents.
+Le total des enregistrements et les répartitions par territoire et par code d’attribution sont implémentés dans l’API et le Dashboard. Restent à calculer et valider les cohortes par date d’effet à partir des fichiers présents.
 
 Pour tout nouvel indicateur, définir l’unité, le périmètre, la méthode, la source et les limites. Le backend agrège les données et retourne un objet compact plutôt que de transmettre tout l’index MAJNUM au navigateur. Les agrégations doivent rester déterministes et couvertes par des tests portant sur les unités et les cas limites.
 
@@ -41,7 +41,7 @@ Les répartitions par catégories officielles nécessitent une classification do
 
 ## Exigences pédagogiques et de présentation
 
-Chaque indicateur ou graphique devra présenter un titre, la question pédagogique, une explication accessible, une interprétation prudente, la méthode de calcul, l’unité, la source, la date de référence et les limites. Lorsque cela aide le visiteur, il devra renvoyer vers une définition plus complète ou la recherche.
+Chaque indicateur ou graphique doit avoir un titre, une explication accessible, une méthode de calcul reproductible, une unité, une source, une date de référence et des limites documentées. L’interface en présente les éléments utiles sous forme concise; les détails de calcul peuvent rester dans la documentation et les métadonnées. Lorsque cela aide le visiteur, elle renvoie vers une définition plus complète ou la recherche.
 
 Les nombres de lignes MAJNUM ne doivent jamais être présentés comme des nombres d’abonnés, de personnes, de lignes actives ou d’appels. Le territoire décrit la ressource et ne localise pas un appelant. Un attributaire déclaré ne prouve pas l’opérateur actuel après portabilité. Une date d’attribution ne remplace pas un historique de versions. Une absence dans MAJNUM ne prouve pas qu’une ressource est disponible.
 

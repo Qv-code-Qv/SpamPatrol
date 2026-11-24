@@ -46,6 +46,54 @@ function buildTerritoryDistribution(index) {
   };
 }
 
+function buildAllocationCodeDistribution(index) {
+  const groups = new Map();
+  for (const record of index) {
+    const value = record && typeof record === "object" ? record.allocationCode : undefined;
+    let kind = "value";
+    let code = value;
+    let label = value;
+    if (value == null) {
+      kind = "missing";
+      code = null;
+      label = "Code absent";
+    } else if (typeof value === "string" && !value.trim()) {
+      kind = "empty";
+      code = null;
+      label = "Code vide";
+    } else if (typeof value !== "string") {
+      kind = "invalid";
+      code = null;
+      label = "Code invalide";
+    }
+
+    const key = JSON.stringify([kind, code]);
+    const group = groups.get(key) || { kind, code, label, count: 0 };
+    group.count += 1;
+    groups.set(key, group);
+  }
+
+  const totalRecords = index.length;
+  const entries = [...groups.values()]
+    .sort((left, right) => {
+      if (left.kind !== "value") return right.kind === "value" ? 1 : left.kind.localeCompare(right.kind, "fr");
+      if (right.kind !== "value") return -1;
+      return right.count - left.count || left.code.localeCompare(right.code, "fr");
+    })
+    .map((group) => ({
+      ...group,
+      sharePercent: totalRecords ? (group.count / totalRecords) * 100 : 0,
+    }));
+  const groupedCount = entries.reduce((total, entry) => total + entry.count, 0);
+  if (groupedCount !== totalRecords) throw new Error("La répartition par code d’attribution ne correspond pas au total MAJNUM.");
+
+  return {
+    totalRecords,
+    entries,
+    method: "Chaque enregistrement est regroupé selon la valeur exacte de son code d’attribution. Les codes absents, vides ou invalides sont comptés séparément; chaque part est calculée sur le total des enregistrements.",
+  };
+}
+
 export function createArcepRouter({ dataDir = DEFAULT_ROOT } = {}) {
   const router = express.Router();
   let cachedGeneration = null;
@@ -88,6 +136,7 @@ export function createArcepRouter({ dataDir = DEFAULT_ROOT } = {}) {
         unit: "enregistrements de ressources ou de tranches",
         method: "Nombre d’objets de l’index MAJNUM préparé par l’application, comparé aux deux nombres d’enregistrements indiqués dans les métadonnées.",
         territoryDistribution: buildTerritoryDistribution(index),
+        allocationCodeDistribution: buildAllocationCodeDistribution(index),
       });
     } catch (error) {
       if (error.code === "ENOENT") {

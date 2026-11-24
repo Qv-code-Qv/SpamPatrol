@@ -8,7 +8,7 @@ Le cahier des charges de référence est `cahier_des_charges.docx`. Le PDF conse
 
 ## État de départ
 
-La recherche ARCEP/MAJNUM et la recherche du jeu local de préfixes existent. Le Dashboard affiche le total calculé de l’instantané et la répartition par territoire déclaré, avec explications pédagogiques. L’API ne transmet pas l’index complet. Les données locales comprennent un instantané MAJNUM publié le 2026-10-19, une liste Identifiants CE et un jeu local de 17 préfixes. Une seule génération MAJNUM traitée est présente; l’historique des ressources n’est donc pas calculable à ce stade.
+La recherche ARCEP/MAJNUM et la recherche du jeu local de préfixes existent. Le Dashboard affiche le total calculé de l’instantané et les répartitions par territoire déclaré et code d’attribution, avec explications pédagogiques. Pour les 424 codes distincts présents localement, les dix effectifs les plus importants sont visibles et tous les autres restent consultables séparément. L’API ne transmet pas l’index complet. Les données locales comprennent un instantané MAJNUM publié le 2026-10-19, une liste Identifiants CE et un jeu local de 17 préfixes. Une seule génération MAJNUM traitée est présente; l’historique des ressources n’est donc pas calculable à ce stade.
 
 ## Ordre de développement
 
@@ -19,7 +19,7 @@ Chaque phase doit être achevée, documentée et vérifiée avant de commencer l
 Priorité immédiate. Ne pas chercher de nouvelles sources avant d’avoir livré et vérifié les premiers indicateurs disponibles dans l’instantané local.
 
 1. **Réalisé pour le total et le territoire :** vérifier métadonnées, comptes, champs, unités et limites; la somme des effectifs territoriaux correspond au nombre d’enregistrements.
-2. **Partiellement réalisé :** le total et les effectifs par libellé exact sont calculés et testés. Restent les codes attributaires distincts, répartitions par code et dates d’effet.
+2. **Réalisé pour les répartitions territoriale et par code :** les effectifs et parts sont calculés côté serveur sur les valeurs exactes; les valeurs absentes, vides et invalides sont traitées séparément. Restent les cohortes de dates d’effet.
 3. **Réalisé pour le résumé actuel :** distinguer `publishedDate` et `activatedAt`; ne pas présenter l’activation comme une dernière synchronisation.
 4. **Réalisé :** l’API de synthèse compacte est disponible et ne transmet pas l’index entier.
 5. Vérifier les indicateurs restants et faire examiner leurs unités, résultats, cas limites et tests avant de les intégrer.
@@ -28,8 +28,8 @@ Priorité immédiate. Ne pas chercher de nouvelles sources avant d’avoir livr�
 
 ### Phase 2 — Premier Dashboard enrichi
 
-1. **Réalisé pour le premier résumé :** afficher source, publication associée, activation locale, total et méthode.
-2. **Réalisé pour le territoire :** afficher les libellés, effectifs et parts avec un total de référence.
+1. **Réalisé pour le premier résumé :** afficher le total, sa source officielle, la date de publication et une limite d’interprétation concise; les détails de méthode, d’activation locale et de version restent dans les métadonnées et la documentation.
+2. **Réalisé pour le territoire et le code d’attribution :** afficher les valeurs brutes, effectifs et parts avec un total de référence; tous les codes restent consultables sans fusion arbitraire.
 3. Ajouter les autres visualisations seulement après validation de chaque agrégat de phase 1, avec explications, méthode, unité, périmètre et limites.
 4. Préserver le template Light Bootstrap Dashboard, les couleurs, la navigation, la disposition et le responsive.
 5. Tester les valeurs affichées, les états d’erreur et l’absence de données inventées.

@@ -87,6 +87,19 @@ test("downloaded ARCEP snapshots match their provenance hashes and active counts
       Object.fromEntries(distribution.entries.map((entry) => [entry.label, entry.count])),
       Object.fromEntries(expectedTerritories),
     );
+    const codeDistribution = summary.allocationCodeDistribution;
+    const expectedCodes = new Map();
+    for (const record of index) {
+      expectedCodes.set(record.allocationCode, (expectedCodes.get(record.allocationCode) || 0) + 1);
+    }
+    assert.equal(codeDistribution.totalRecords, index.length);
+    assert.equal(codeDistribution.entries.filter((entry) => entry.kind === "value").length, expectedCodes.size);
+    assert.deepEqual(
+      Object.fromEntries(codeDistribution.entries.filter((entry) => entry.kind === "value").map((entry) => [entry.code, entry.count])),
+      Object.fromEntries(expectedCodes),
+    );
+    assert.equal(codeDistribution.entries.reduce((sum, entry) => sum + entry.count, 0), index.length);
+    assert.equal(codeDistribution.entries.some((entry) => entry.kind !== "value"), false);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
@@ -102,11 +115,11 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   await fs.writeFile(path.join(generationDir, "index.json"), JSON.stringify([
     { start: "0600000000", end: "0600000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "01/01/2020", resource: "06000" },
     { start: "0610000000", end: "0610000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "01/01/2020", resource: "06100" },
-    { start: "0620000000", end: "0620000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "MÉTROPOLE", allocationDate: "01/01/2020", resource: "06200" },
-    { start: "0630000000", end: "0630000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: null, allocationDate: "01/01/2020", resource: "06300" },
-    { start: "0640000000", end: "0640000099", allocationCode: "ABCD", entityName: "Entité officielle", allocationDate: "01/01/2020", resource: "06400" },
-    { start: "0650000000", end: "0650000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: 42, allocationDate: "01/01/2020", resource: "06500" },
-    { start: "0660000000", end: "0660000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "   ", allocationDate: "01/01/2020", resource: "06600" },
+    { start: "0620000000", end: "0620000099", allocationCode: "abcd", entityName: null, territory: "MÉTROPOLE", allocationDate: "01/01/2020", resource: "06200" },
+    { start: "0630000000", end: "0630000099", allocationCode: "ZZZZ", entityName: null, territory: null, allocationDate: "01/01/2020", resource: "06300" },
+    { start: "0640000000", end: "0640000099", entityName: null, allocationDate: "01/01/2020", resource: "06400" },
+    { start: "0650000000", end: "0650000099", allocationCode: "", entityName: null, territory: 42, allocationDate: "01/01/2020", resource: "06500" },
+    { start: "0660000000", end: "0660000099", allocationCode: 42, entityName: null, territory: "   ", allocationDate: "01/01/2020", resource: "06600" },
   ]));
   const metadataPath = path.join(arcepDir, "metadata.json");
   const metadata = {
@@ -149,6 +162,23 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   );
   assert.equal(summary.territoryDistribution.entries.find((entry) => entry.label === "Métropole").sharePercent, (2 / 7) * 100);
   assert.equal(summary.territoryDistribution.entries.reduce((sum, entry) => sum + entry.count, 0), summary.recordCount);
+
+  const codeDistribution = summary.allocationCodeDistribution;
+  assert.equal(codeDistribution.totalRecords, 7);
+  assert.deepEqual(
+    Object.fromEntries(codeDistribution.entries.filter((entry) => entry.kind === "value").map((entry) => [entry.code, entry.count])),
+    { ABCD: 2, abcd: 1, ZZZZ: 1 },
+  );
+  assert.equal(codeDistribution.entries[0].code, "ABCD", "groups are ordered by count without changing their values");
+  assert.equal(codeDistribution.entries.find((entry) => entry.code === "ABCD").sharePercent, (2 / 7) * 100);
+  assert.equal(codeDistribution.entries.find((entry) => entry.code === "abcd").sharePercent, (1 / 7) * 100);
+  for (const entry of codeDistribution.entries) assert.equal(entry.sharePercent, (entry.count / 7) * 100);
+  assert.deepEqual(
+    Object.fromEntries(codeDistribution.entries.filter((entry) => entry.kind !== "value").map((entry) => [entry.kind, entry.count])),
+    { empty: 1, invalid: 1, missing: 1 },
+  );
+  assert.equal(codeDistribution.entries.find((entry) => entry.code === "ZZZZ").label, "ZZZZ", "unknown codes remain visible as raw values");
+  assert.equal(codeDistribution.entries.reduce((sum, entry) => sum + entry.count, 0), codeDistribution.totalRecords);
 
   metadata.counts.allocations = 8;
   await fs.writeFile(metadataPath, JSON.stringify(metadata));

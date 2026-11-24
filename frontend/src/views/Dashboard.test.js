@@ -33,6 +33,8 @@ describe("Dashboard observatory", () => {
     const text = markup.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
 
     expect(markup).toContain("container-fluid");
+    expect(markup.match(/col-lg-6/g)).toHaveLength(2);
+    expect(markup.match(/col-xl-4/g)).toHaveLength(3);
     expect(markup).toContain("Observatoire de la numérotation");
     expect(markup).toContain("Ressources de numérotation recensées");
     expect(text).toMatch(/Comprendre les informations publiques sur la numérotation téléphonique/);
@@ -107,7 +109,7 @@ describe("Dashboard observatory", () => {
     });
 
     expect(text).toContain("Répartition par territoire");
-    expect(text).toContain("Part des ressources recensées pour chaque territoire déclaré");
+    expect(text).toContain("Part du total par territoire déclaré");
     expect(text).toContain("MÉTROPOLE");
     expect(text).toContain("Métropole");
     expect(text).toContain("Valeur absente ou vide");
@@ -119,7 +121,65 @@ describe("Dashboard observatory", () => {
     expect(text).toContain("Le territoire déclaré ne localise pas nécessairement l’appelant ou l’utilisateur.");
     expect(text).not.toMatch(/MAJNUM|JSON|index|instantané|génération|SHA-?256|méthode de calcul/i);
     expect(container.querySelectorAll(".progress-bar")).toHaveLength(4);
+    expect([...container.querySelectorAll(".progress")].every((bar) => bar.style.height === "0.5rem")).toBe(true);
+    expect(container.querySelectorAll("li.mb-2")).toHaveLength(4);
     expect(container.querySelector('a[href="https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique"]')).not.toBeNull();
+  });
+
+  test("renders raw allocation codes with totals and interpretation limits", async () => {
+    const text = await renderDashboardWithSummary({
+      source: "ARCEP – MAJNUM",
+      sourceUrl: "https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique",
+      publishedDate: "2026-10-19",
+      recordCount: 7,
+      unit: "enregistrements de ressources ou de tranches",
+      allocationCodeDistribution: {
+        totalRecords: 7,
+        entries: [
+          { kind: "value", code: "ABCD", label: "ABCD", count: 2, sharePercent: 200 / 7 },
+          { kind: "value", code: "abcd", label: "abcd", count: 1, sharePercent: 100 / 7 },
+          { kind: "value", code: "ZZZZ", label: "ZZZZ", count: 1, sharePercent: 100 / 7 },
+          { kind: "missing", code: null, label: "Code absent", count: 1, sharePercent: 100 / 7 },
+          { kind: "empty", code: null, label: "Code vide", count: 1, sharePercent: 100 / 7 },
+          { kind: "invalid", code: null, label: "Code invalide", count: 1, sharePercent: 100 / 7 },
+        ],
+      },
+    });
+
+    expect(text).toContain("Répartition par code d’attribution");
+    expect(text).toContain("Part du total par code d’attribution");
+    expect(text).toContain("Total : 7 ressources recensées.");
+    expect(text).toContain("ABCD");
+    expect(text).toContain("abcd");
+    expect(text).toContain("ZZZZ");
+    expect(text).toContain("2 (28,57 %)");
+    expect(text).toContain("Code absent");
+    expect(text).toContain("Code vide");
+    expect(text).toContain("Code invalide");
+    expect(text).toContain("À retenir : un code décrit l’attribution, pas les abonnés, les parts de marché ni l’utilisation réelle.");
+    expect(text).toContain("Un code ne garantit pas l’opérateur actuel après portabilité.");
+    expect(text).not.toMatch(/opérateur le plus important|classement des opérateurs|catégorie de fraude|démarchage|danger/i);
+    expect(container.querySelectorAll(".progress-bar")).toHaveLength(6);
+    expect([...container.querySelectorAll(".progress")].every((bar) => bar.style.height === "0.5rem")).toBe(true);
+    expect(container.querySelectorAll("li.mb-2")).toHaveLength(6);
+    expect(container.querySelector('a[href="https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique"]')).not.toBeNull();
+  });
+
+  test("keeps every code available while initially showing only the ten largest groups", async () => {
+    const entries = Array.from({ length: 12 }, (_, index) => {
+      const code = `CODE${String(index).padStart(2, "0")}`;
+      return { kind: "value", code, label: code, count: 1, sharePercent: 100 / 12 };
+    });
+    const text = await renderDashboardWithSummary({
+      recordCount: 12,
+      allocationCodeDistribution: { totalRecords: 12, entries },
+    });
+
+    expect(text).toContain("Afficher les 2 autres codes");
+    expect(container.querySelector("details").open).toBe(false);
+    expect(container.querySelectorAll(".progress-bar")).toHaveLength(12);
+    expect(text).toContain("CODE10");
+    expect(text).toContain("CODE11");
   });
 
   test("does not show a territory chart when the API distribution total is inconsistent", async () => {
@@ -129,6 +189,21 @@ describe("Dashboard observatory", () => {
     });
 
     expect(text).toContain("La répartition est momentanément indisponible.");
+    expect(container.querySelectorAll(".progress-bar")).toHaveLength(0);
+  });
+
+  test("does not show the allocation-code chart when its total is inconsistent", async () => {
+    const text = await renderDashboardWithSummary({
+      recordCount: 2,
+      allocationCodeDistribution: {
+        totalRecords: 1,
+        entries: [{ kind: "value", code: "ABCD", label: "ABCD", count: 1, sharePercent: 100 }],
+      },
+    });
+
+    expect(text).toContain("Répartition par code d’attribution");
+    expect(text).toContain("La répartition est momentanément indisponible.");
+    expect(text).not.toContain("ABCD");
     expect(container.querySelectorAll(".progress-bar")).toHaveLength(0);
   });
 
