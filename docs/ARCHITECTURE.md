@@ -2,59 +2,60 @@
 
 ## Orientation de référence
 
-SpamPatrol est un outil indépendant d’information sur la numérotation téléphonique française, fondé principalement sur les données officielles ARCEP/MAJNUM. La recherche nécessite le traitement temporaire du numéro saisi ; celui-ci n’est pas conservé comme historique individuel. Il ne doit pas apparaître dans les journaux techniques, et aucune identité de visiteur ni adresse IP ne doit être associée à un historique ou à un compteur de recherche. Ces mesures ne signifient pas qu’aucun traitement de données personnelles n’a lieu au sens juridique. Le projet ne crée pas de base communautaire et ne publie aucune accusation sur un numéro ou son titulaire. Le cahier des charges de référence est `cahier_des_charges.docx` ; le PDF conservé est une archive historique.
+SpamPatrol est un outil indépendant d’information, d’observation et de compréhension de la numérotation téléphonique française. Il privilégie les données officielles de l’ARCEP, notamment MAJNUM, et vise une maintenance simple par une seule personne. Le cahier des charges de référence est `cahier_des_charges.docx`; le PDF conservé est une archive historique.
 
-Les fonctionnalités communautaires et leurs routes ont été retirées du code actif. Les fichiers de données communautaires ont également été supprimés de la branche actuelle ; leurs versions peuvent rester dans l’historique Git, qui n’a pas été réécrit.
+Le Dashboard actif est actuellement une page informative statique : il ne charge pas de données, ne calcule pas d’indicateurs et ne rend aucun graphique. La page de recherche consulte séparément MAJNUM et le jeu local de préfixes. Aucun endpoint de synthèse de l’observatoire, de statistique de consultation ou d’activité communautaire n’est actuellement implémenté.
 
-## Stack et flux officiels
+Les fonctionnalités communautaires ont été retirées du code actif et ne font pas partie de la cible. Les statistiques de consultation restent facultatives et futures; elles sont distinctes des données officielles et ne peuvent être conçues qu’après validation des règles de confidentialité du cahier des charges.
 
-- **Frontend** : React, React Router et React-Bootstrap avec le template Light Bootstrap Dashboard React, à préserver.
-- **Backend** : JavaScript, Node.js et Express avec API REST.
-- **Données** : fichiers JSON locaux pour les index et métadonnées lorsque cela reste adapté.
+## Stack et flux présents
+
+- **Frontend** : React, React Router et React-Bootstrap avec le template Light Bootstrap Dashboard React.
+- **Backend** : JavaScript, Node.js et Express avec une API REST.
+- **Données** : fichiers JSON locaux; aucun stockage SQL n’est prévu pour le périmètre actuel.
 - **Client API** : `frontend/src/services/api.js`, configuré par `REACT_APP_API_URL` (par défaut `http://localhost:4000/api`).
-- **Sécurité serveur existante** : Helmet, limite JSON de 16 Ko et CORS configuré pour les origines locales ou `FRONTEND_ORIGIN`.
+- **Sécurité serveur** : Helmet, limite JSON de 16 Ko, CORS configuré et journal Morgan qui exclut volontairement l’URL et l’adresse IP.
+- **Graphiques** : Chartist et `react-chartist` figurent parmi les dépendances du template, mais aucun graphique n’est actuellement utilisé par le Dashboard routé.
 
-Les données officielles sont importées et indexées séparément sous `backend/src/data/arcep`. MAJNUM décrit des ressources et droits réglementaires d’utilisation de tranches ; il ne permet pas d’identifier l’utilisateur final. Les métadonnées et les références de sources doivent rester traçables.
+Les routes actuelles comprennent `GET /api/arcep/lookup/:numero`, les recherches du jeu local `/api/prefix/:numero` et `/api/prefixes/:numero`, ainsi que `/api/health`. Les recherches valident et normalisent temporairement la saisie. La réponse ARCEP fournit la valeur normalisée au client, la tranche trouvée ou l’absence de correspondance, l’attributaire déclaré, le territoire, la date d’attribution, la source et les dates disponibles.
 
-## Recherche
+Le traitement de recherche ne crée aucun fichier ni historique. Les métadonnées officielles et l’index sont lus depuis `backend/src/data/arcep`. Le jeu local `backend/src/data/prefixes.json` est lu séparément et sa provenance externe n’est pas documentée dans ce fichier.
 
-La recherche valide et normalise le numéro français saisi, qui est nécessairement traité temporairement pour consulter les référentiels retenus. Il n’est pas conservé comme historique individuel dans un fichier ou une base et ne doit pas être inscrit dans les journaux techniques. Aucune identité de visiteur ni adresse IP ne doit être associée à l’historique ou aux compteurs de recherche. La réponse peut présenter la tranche, l’attributaire déclaré, le territoire et les dates disponibles, ainsi que la source.
+## Sources et structure locales
 
-Une attribution de tranche ne révèle pas l’utilisateur final et ne garantit pas l’opérateur actuel après portabilité. Une absence de correspondance dans l’index local ne prouve ni que le numéro n’existe pas, ni qu’il est fiable.
+L’instantané actif contient MAJNUM et Identifiants CE. Le traitement transforme chaque ligne MAJNUM en un enregistrement comprenant `start`, `end`, `allocationCode`, `entityName`, `territory`, `allocationDate` et `resource`. Le rapprochement entre MAJNUM et Identifiants CE se fait par égalité exacte du code. Les champs bruts de MAJNUM ne comprennent pas de catégorie réglementaire normalisée, d’état de disponibilité, d’usage observé ou de mesure d’appels.
 
-## Routes à conserver dans la cible
+`metadata.json` décrit la génération, les sources, leurs empreintes, tailles, comptes de lignes, dates de publication, licence et limites. `activatedAt` indique l’activation locale de la génération; ce n’est ni la date de dernière vérification de la source ni une preuve de synchronisation en ligne. Une comparaison à la source actuelle nécessite un contrôle distinct.
 
-| Route | Fonction cible |
-|---|---|
-| `GET /api/health` | Vérification du serveur |
-| `GET /api/arcep/lookup/:numero` | Recherche officielle MAJNUM avec provenance, date et limites |
-| `GET /api/prefixes/:numero` et `GET /api/prefix/:numero` | Recherche dans le jeu local de préfixes ; sa provenance doit être clairement indiquée |
-| `GET /api/search-stats` (évolution future ; aucun endpoint actuellement implémenté) | Agrégats de consultations SpamPatrol, après règles d’éligibilité et de confidentialité |
+Une seule génération traitée est présente actuellement dans le dépôt. Les empreintes permettent d’identifier les fichiers locaux, mais l’instantané unique ne permet pas une analyse d’évolution historique.
 
-## Données communautaires historiques
+## Architecture cible du Dashboard
 
-Les fichiers de données communautaires ne sont plus présents dans la branche actuelle et ne font pas partie du modèle de données. Leurs versions peuvent subsister dans les commits historiques, les sauvegardes externes ou d’autres clones ; la suppression de la branche actuelle ne les efface pas de ces emplacements.
+La première évolution doit calculer des indicateurs à partir des fichiers déjà présents : nombre d’enregistrements de ressources/tranches, codes attributaires distincts, agrégations par territoire et code, cohortes par date d’effet et affichage des métadonnées de l’instantané. Ces calculs ne sont pas encore exposés par une route et ne sont pas présents dans l’interface.
 
-## Tableau de bord observatoire
+Avant de créer une API de synthèse, définir pour chaque indicateur l’unité, le périmètre, la méthode, la source et les limites. Le backend devrait agréger les données et retourner un objet compact, plutôt que transmettre tout l’index MAJNUM au navigateur. Les agrégations devront être déterministes et couvertes par des tests portant sur les unités et les cas limites.
 
-Les indicateurs doivent provenir des référentiels officiels : volume de tranches, répartition par catégorie de ressource, territoire et attributaire selon les champs disponibles, date d’actualisation et évolution seulement si des instantanés historiques fiables existent. Chaque statistique précise sa source et son périmètre. Ne pas afficher de classement de numéros signalés et ne pas inventer de chiffres.
+Les répartitions par catégories officielles nécessitent une classification documentée et versionnée qui ne figure pas dans MAJNUM. Les analyses historiques nécessitent plusieurs instantanés datés et comparables. Les ressources gelées, les informations de portabilité et les numéros courts nécessitent l’étude et l’intégration contrôlée de sources officielles complémentaires.
 
-### Statistiques de consultation SpamPatrol
+## Exigences pédagogiques et de présentation
 
-Ces métriques sont une mesure de l’usage du site, pas des statistiques ARCEP. Une consultation n’est admissible que si la recherche réussit et que le numéro correspond à une ressource reconnue dans l’index officiel MAJNUM. Les recherches invalides ou sans correspondance n’incrémentent aucun compteur. Les requêtes répétées peuvent incrémenter le compteur de la ressource à chaque consultation réussie.
+Chaque indicateur ou graphique devra présenter un titre, la question pédagogique, une explication accessible, une interprétation prudente, la méthode de calcul, l’unité, la source, la date de référence et les limites. Lorsque cela aide le visiteur, il devra renvoyer vers une définition plus complète ou la recherche.
 
-Ne conserver que des compteurs agrégés, par période et par ressource admissible ou tranche/nature. Ne créer aucun événement individuel ni associer compteur, numéro ou période à une identité, une adresse IP, un identifiant de session ou autre donnée de visiteur. Ne pas produire de journal contenant le numéro recherché ; les routes de recherche et la journalisation HTTP devront être conçues ou configurées pour ne pas conserver les numéros dans les logs. Un hash du numéro n’est pas une anonymisation suffisante.
+Les nombres de lignes MAJNUM ne doivent jamais être présentés comme des nombres d’abonnés, de personnes, de lignes actives ou d’appels. Le territoire décrit la ressource et ne localise pas un appelant. Un attributaire déclaré ne prouve pas l’opérateur actuel après portabilité. Une date d’attribution ne remplace pas un historique de versions. Une absence dans MAJNUM ne prouve pas qu’une ressource est disponible.
 
-Un compteur associé à un numéro exact reste une donnée portant sur ce numéro. Une attribution MAJNUM ne prouve pas qu’il est public ou qu’il n’appartient pas à une personne physique. Le classement exact doit donc être bloqué jusqu’à la définition et la validation de critères d’éligibilité explicites, comprenant les catégories et plages exclues ainsi que des protections contre la divulgation par faibles volumes ou par recoupement. Si ces conditions ne sont pas remplies, n’afficher que des regroupements par tranche officielle ou nature de numérotation, avec généralisation ou suppression des petits groupes selon des seuils à décider.
+Préserver le template, la navigation, les couleurs, la disposition et le responsive. Ne pas ajouter de dépendance graphique sans nécessité démontrée.
 
-Un fichier JSON dédié (par exemple `searchStats.json`) peut contenir les compteurs agrégés et les périodes, jamais les événements ou identifiants de visiteurs. Il doit rester séparé des index officiels et des données communautaires historiques. Les mises à jour doivent être sérialisées et sûres. Le volume attendu, le rythme d’écriture, la stratégie de sauvegarde et la tolérance à la perte de compteurs après arrêt restent à décider avant implémentation.
+## Statistiques de consultation futures
 
-Visualisations envisagées après validation des règles : total de consultations reconnues, répartition par nature, évolution temporelle issue de compteurs agrégés et, uniquement pour les ressources admissibles, classement des numéros exacts. L’interface doit identifier ces valeurs comme des consultations observées par SpamPatrol.
+Ces métriques seraient des mesures d’usage de SpamPatrol, jamais des statistiques de l’ARCEP. Aucun compteur, stockage ou endpoint n’existe. Toute proposition reste bloquée jusqu’à validation explicite des critères d’éligibilité, exclusions, périodes, seuils, agrégats de repli et protections contre les faibles volumes ou les recoupements.
 
-## Limites de conception
+Si elles sont autorisées, elles ne devront pas conserver le numéro recherché, sa forme normalisée, un hash, un événement individuel, une URL de recherche, une adresse IP, un identifiant de visiteur ou de session. Les recherches invalides, sans correspondance MAJNUM, locales uniquement ou en erreur seront exclues. La conception ne devra pas confondre une tranche attribuée avec un numéro utilisé ou un titulaire. Un fichier JSON distinct ne pourra stocker que des agrégats déjà validés; les écritures devront être sérialisées et sûres. Les limites de concurrence, sauvegarde et perte de compteurs devront être établies avant implémentation.
 
-- Les fichiers JSON restent simples à maintenir mais n’apportent pas de transactions multi-processus ni de stockage distribué.
-- Le référentiel local peut être partiel ou daté ; une absence ne doit pas être interprétée comme une information de fiabilité.
-- Les données ARCEP ne déterminent ni l’utilisateur final, ni l’usage du numéro, ni l’opérateur actuel après portabilité.
-- L’IA est une idée future facultative, pas une dépendance du MVP. Elle ne devra pas inventer de faits ou de classifications.
-- Ne pas ajouter de base SQL sans besoin démontré.
+## Limites d’architecture
+
+- Les fichiers JSON sont adaptés au périmètre simple actuel, mais n’apportent pas de transactions multi-processus ni de stockage distribué.
+- L’index local peut être daté ou incomplet; son empreinte ne prouve pas qu’il correspond à la dernière version en ligne.
+- Les fichiers réglementaires décrivent des droits d’utilisation, pas l’usage réel ni l’identité de l’utilisateur final.
+- Les journaux du serveur applicatif ne couvrent pas nécessairement les journaux d’Apache, d’un proxy ou de l’hébergeur; la configuration de déploiement doit être vérifiée séparément.
+- L’IA reste une idée facultative, hors du périmètre immédiat, et ne peut inventer des attributions ou qualifier un numéro de fraude.
+- Aucune base SQL ne sera ajoutée sans besoin démontré et compatible avec la maintenance du projet.

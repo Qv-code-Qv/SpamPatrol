@@ -1,42 +1,80 @@
 # Feuille de route SpamPatrol
 
-## Identité du projet
+## Cap du projet
 
-SpamPatrol est un outil indépendant d’information sur la numérotation téléphonique française, fondé principalement sur les données officielles afin de mieux comprendre les informations associées aux numéros. Il privilégie les sources ARCEP/MAJNUM, la traçabilité, la protection des personnes physiques et une maintenance simple. Il n’est ni affilié ni cautionné par l’ARCEP.
+SpamPatrol évolue vers un observatoire pédagogique indépendant de la numérotation téléphonique française, fondé prioritairement sur les sources officielles de l’ARCEP, en particulier MAJNUM. Le projet doit expliquer les données, leurs unités, leurs limites et leur date de référence; il ne doit pas se réduire à des compteurs sans contexte.
 
-Le cahier des charges de référence est `cahier_des_charges.docx`. Le PDF historique est conservé comme archive et n’est plus la référence fonctionnelle. Les fonctionnalités communautaires ont été retirées du code actif et leurs fichiers de données ont été supprimés de la branche actuelle. Les anciens commits Git peuvent encore contenir ces données ; l’historique n’est pas réécrit.
+Le cahier des charges de référence est `cahier_des_charges.docx`. Le PDF conservé est une archive historique. Les fonctionnalités communautaires ont été retirées du code actif et ne sont pas prévues dans cette roadmap. Le projet reste maintenu par une seule personne, avec React, Node.js/Express, API REST et fichiers JSON. Aucune base SQL n’est prévue.
 
-## Priorités de développement
+## État de départ
 
-1. **Fiabiliser la recherche officielle** : validation et normalisation du numéro, résultat MAJNUM avec provenance et date, messages clairs pour les absences et erreurs. Ne conserver ni la saisie, ni un journal permettant de retrouver le numéro.
-2. **Définir les règles de confidentialité des statistiques de consultation** : critères d’éligibilité des numéros exacts, catégories/plages exclues, seuils de publication et agrégations de repli. Tant que ces règles ne sont pas décidées, ne pas publier de classement exact.
-3. **Ajouter les compteurs de consultation** après une correspondance ARCEP/MAJNUM, sans historique événementiel ni données de visiteur. Stocker uniquement des agrégats dans un JSON dédié, distinct des référentiels officiels.
-4. **Vérifier le tableau de bord** pour maintenir la distinction entre les indicateurs issus des référentiels officiels et les éventuelles consultations observées par SpamPatrol.
-5. **Tester** les routes officielles, l’exclusion des recherches non reconnues, l’absence de conservation individuelle ou de journal de numéros et les règles de confidentialité décidées.
+La recherche ARCEP/MAJNUM et la recherche du jeu local de préfixes existent. Le Dashboard actif reste statique : il n’appelle pas l’API et ne présente pas de données, graphiques ou indicateurs calculés. Les données locales comprennent un instantané MAJNUM publié le 2026-10-19, une liste Identifiants CE et un jeu local de 17 préfixes. Une seule génération MAJNUM traitée est présente; l’historique des ressources n’est donc pas calculable à ce stade.
 
-## Fonctionnalités présentes ou évolutions envisagées
+## Ordre de développement
 
-- Recherche des ressources de numérotation officielles et affichage des informations disponibles.
-- Tableau de bord actuel : observation des référentiels officiels, sans statistique inventée.
-- Statistiques de consultation propres à SpamPatrol : fonctionnalité envisagée pour une étape ultérieure, non implémentée. Aucun endpoint de statistiques de consultation n’est actuellement disponible.
-- Traçabilité des sources, des imports et des dates de mise à jour.
-- Informations pédagogiques sur la numérotation française et les limites des données ARCEP.
-- Stack React, Node.js/Express, API REST et fichiers JSON tant qu’ils restent adaptés.
+Chaque phase doit être achevée, documentée et vérifiée avant de commencer la suivante. Une fonctionnalité mentionnée ci-dessous comme cible ou possibilité n’est pas une fonctionnalité déjà développée.
 
-## Fonctionnalité future envisagée
+### Phase 1 — Exploiter les données déjà présentes
 
-Un assistant IA pédagogique pourra être étudié plus tard pour expliquer les données officielles. Il n’est pas une dépendance du MVP, ne doit pas être développé maintenant et ne pourra ni inventer des attributions, ni identifier un titulaire, ni qualifier un numéro de frauduleux.
+Priorité immédiate. Ne pas chercher de nouvelles sources avant d’avoir livré et vérifié les premiers indicateurs disponibles dans l’instantané local.
 
-## Fonctionnalité ultérieure envisagée : statistiques de consultation
+1. Vérifier les métadonnées, empreintes, comptes, champs, unités et limites de l’index MAJNUM existant.
+2. Définir et tester les calculs : total de lignes de ressources/tranches, codes attributataires distincts, agrégations par territoire et code, distribution des dates d’effet parmi les ressources de l’instantané.
+3. Distinguer `publishedDate`, `activatedAt` et toute future vérification en ligne; ne jamais appeler `activatedAt` une dernière synchronisation.
+4. Concevoir une API de synthèse compacte si elle est nécessaire. Ne pas envoyer l’index entier au navigateur.
+5. Vérifier les unités, résultats, cas limites et tests; faire examiner le résultat avant la phase 2.
 
-Cette fonctionnalité n’est pas implémentée et aucun endpoint de statistiques de consultation n’existe actuellement. Si elle est développée ultérieurement, seules les recherches reconnues dans MAJNUM pourront contribuer à des compteurs agrégés. Les compteurs envisagés seraient agrégés par ressource admissible, tranche ou nature de numérotation et période, sans historique individuel ni identité de visiteur ou adresse IP associée. Aucun journal contenant les numéros recherchés ne devrait être conservé ; un hachage n’est pas une anonymisation suffisante. Ces métriques sont celles des consultations du site, jamais des statistiques de l’ARCEP.
+**Critère de fin :** chaque indicateur possède une source, une méthode reproductible, une unité exacte et une description de ce qu’il ne mesure pas. Aucun indicateur n’est publié si ces éléments manquent.
 
-La présence dans une plage ARCEP ne prouve pas qu’un numéro exact est public ou ne concerne pas une personne physique. Les conditions de publication restent à définir avant toute implémentation ou publication : critères d’éligibilité des numéros exacts, catégories/plages exclues, protections contre les faibles volumes et seuils de confidentialité. À défaut, privilégier des agrégats par tranche/nature, éventuellement généralisés ou masqués selon des seuils à décider.
+### Phase 2 — Premier Dashboard enrichi
 
-## Fonctionnalités abandonnées
+1. Afficher la provenance et les dates locales de l’instantané avec leur signification exacte.
+2. Intégrer uniquement les agrégats vérifiés de la phase 1.
+3. Ajouter des visualisations accessibles et complémentaires, avec explications pédagogiques, méthode, unité, périmètre et limites.
+4. Préserver le template Light Bootstrap Dashboard, les couleurs, la navigation, la disposition et le responsive.
+5. Tester les valeurs affichées, les états d’erreur et l’absence de données inventées.
 
-Les signalements communautaires, formulaires et commentaires, recherches ou classements fondés sur des signalements, votes, listes noires, export CSV communautaire, statistiques de signalements, comptes liés à ces fonctions et modération communautaire sont abandonnés. Leur réintroduction n’est pas prévue dans cette roadmap.
+**Critère de fin :** le Dashboard montre le contenu réel de l’instantané sans le présenter comme un nombre d’abonnés, d’appels, de lignes actives ou d’utilisateurs.
 
-## Périmètre de maintenance
+### Phase 3 — Classification réglementaire officielle
 
-Le projet reste géré par une seule personne. Ne pas introduire de base SQL ou de système complexe sans besoin démontré. Les données communautaires ont été retirées de la branche actuelle selon la décision du projet. Cette suppression ne retire pas leurs versions des commits historiques, sauvegardes ou autres clones ; leur traitement éventuel dans ces emplacements est distinct.
+1. Identifier les documents officiels applicables aux catégories de numérotation.
+2. Définir une table de correspondance versionnée entre les ressources MAJNUM et les catégories, avec les exceptions et cas particuliers.
+3. Tester cette classification sur les ressources présentes et documenter sa date de référence.
+4. Calculer et intégrer une répartition par catégorie seulement après validation de la correspondance.
+
+**Critère de fin :** les catégories affichées sont traçables vers une règle ou source officielle et aucune classification n’est déduite seulement de la longueur ou d’un préfixe ambigu.
+
+### Phase 4 — Étudier les sources officielles complémentaires
+
+Évaluer chaque source avant intégration : pertinence pédagogique, producteur, licence, fréquence et date de mise à jour, structure, méthode de rapprochement, limites et coût de maintenance.
+
+Pistes à étudier séparément : GELNUM pour les ressources gelées ou abrogées; MAJPORTA pour expliquer des éléments de portabilité sans en déduire l’opérateur actuel; MAJNFB pour certains numéros courts; références officielles adaptées aux catégories et tarifs des SVA. L’intégration d’une source n’est pas une décision de développement automatique.
+
+**Critère de fin :** une fiche de source et une méthode testable sont validées avant toute ingestion.
+
+### Phase 5 — Historique et analyses ultérieures
+
+1. Définir une politique de conservation des instantanés complets et de leurs métadonnées.
+2. Après constitution de plusieurs versions comparables, définir les clés et règles de comparaison pour les ajouts, retraits, modifications, scissions et fusions de tranches.
+3. Construire des indicateurs d’évolution seulement à partir de versions datées et comparables.
+
+Les dates d’effet présentes dans un instantané unique ne remplacent pas cet historique et ne doivent pas être présentées comme une évolution temporelle du référentiel.
+
+## Statistiques de consultation indépendantes
+
+Les éventuelles statistiques de consultation de SpamPatrol ne sont pas une extension automatique des indicateurs ARCEP et ne font pas partie des phases immédiates. Aucun compteur ni endpoint n’est actuellement disponible. Cette fonctionnalité facultative nécessite une décision séparée sur l’éligibilité, les exclusions, les répétitions, les périodes, les seuils et les protections contre le recoupement.
+
+Aucun numéro exact ou normalisé, hash, événement individuel, historique de recherche, IP ou identifiant de visiteur ne doit être enregistré. Les recherches invalides, en erreur, sans correspondance MAJNUM ou uniquement locales doivent être exclues. L’implémentation et la publication restent bloquées jusqu’à validation explicite des règles et de leur conformité.
+
+## Principes de fiabilité pour toute phase
+
+- Les nombres affichés sont des enregistrements de ressources/tranches si c’est l’unité du calcul; ne pas les appeler nombres d’abonnés ou appels.
+- Le territoire décrit une ressource et ne localise pas un appelant.
+- Un code attributaire ne mesure pas une part de marché et ne garantit pas l’opérateur actuel après portabilité.
+- Une date d’attribution ne constitue pas une série historique.
+- L’absence d’une ligne ne prouve pas la disponibilité d’une ressource.
+- MAJNUM ne fournit ni indicateur de spam, ni mesure de démarchage ou de fraude.
+- Chaque graphique explique sa source, date, calcul, unité, périmètre et limites.
+- Ne réintroduire aucune fonction communautaire, liste noire ou classement issu de signalements.
+- L’IA reste une possibilité facultative hors du périmètre immédiat.

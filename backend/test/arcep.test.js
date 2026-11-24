@@ -59,6 +59,20 @@ test("downloaded ARCEP snapshots match their provenance hashes and active counts
     const result = await response.json();
     assert.equal(result.allocation.rangeStart, candidate.start);
     assert.equal(result.updatedAt, metadata.sources.MAJNUM.publishedDate);
+
+    const summaryResponse = await fetch(`http://127.0.0.1:${server.address().port}/api/arcep/summary`);
+    assert.equal(summaryResponse.status, 200);
+    const summary = await summaryResponse.json();
+    assert.equal(summary.recordCount, index.length);
+    assert.equal(summary.recordCount, metadata.counts.allocations);
+    assert.equal(summary.recordCount, metadata.sources.MAJNUM.rows);
+    assert.equal(summary.source, "ARCEP – MAJNUM");
+    assert.equal(summary.publishedDate, metadata.sources.MAJNUM.publishedDate);
+    assert.equal(summary.activatedAt, metadata.activatedAt);
+    assert.equal(summary.snapshotVersion, metadata.generation);
+    assert.match(summary.unit, /enregistrements de ressources ou de tranches/);
+    assert.equal("index" in summary, false, "the API must not send the full MAJNUM index");
+    assert.equal("allocations" in summary, false, "the API returns only its summary");
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
@@ -74,10 +88,14 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   await fs.writeFile(path.join(generationDir, "index.json"), JSON.stringify([
     { start: "0600000000", end: "0600000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "01/01/2020", resource: "06000" },
   ]));
-  await fs.writeFile(path.join(arcepDir, "metadata.json"), JSON.stringify({
+  const metadataPath = path.join(arcepDir, "metadata.json");
+  const metadata = {
     generation: "test", indexFile: "processed/test/index.json", activatedAt: "2026-10-19T00:00:00.000Z",
-    sources: { MAJNUM: { attribution: "Source ARCEP test" } }, limits: ["Numéro porté non identifié."],
-  }));
+    counts: { allocations: 1 },
+    sources: { MAJNUM: { attribution: "Source ARCEP test", rows: 1, publishedDate: "2026-10-19", datasetUrl: "https://example.invalid/majnum" } },
+    limits: ["Numéro porté non identifié."],
+  };
+  await fs.writeFile(metadataPath, JSON.stringify(metadata));
   const server = createServer(createApp({ dataDir }));
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}/api/arcep/lookup/`;
@@ -95,6 +113,22 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   assert.equal((await absent.json()).allocation, null);
   assert.equal((await fetch(`${base}bad`)).status, 400);
 
-  await fs.rm(path.join(arcepDir, "metadata.json"));
+  const summaryUrl = `http://127.0.0.1:${server.address().port}/api/arcep/summary`;
+  const summaryResponse = await fetch(summaryUrl);
+  assert.equal(summaryResponse.status, 200);
+  const summary = await summaryResponse.json();
+  assert.equal(summary.recordCount, 1);
+  assert.equal(summary.publishedDate, "2026-10-19");
+  assert.equal(summary.snapshotVersion, "test");
+  assert.equal(summary.sourceUrl, "https://example.invalid/majnum");
+
+  metadata.counts.allocations = 2;
+  await fs.writeFile(metadataPath, JSON.stringify(metadata));
+  const inconsistent = await fetch(summaryUrl);
+  assert.equal(inconsistent.status, 503);
+  assert.match((await inconsistent.json()).message, /comptes locaux sont incohérents/);
+
+  await fs.rm(metadataPath);
   assert.equal((await fetch(`${base}0600000001`)).status, 503);
+  assert.equal((await fetch(summaryUrl)).status, 503);
 });

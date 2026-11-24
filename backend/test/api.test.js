@@ -25,7 +25,18 @@ async function startApi(t, { logLines = [] } = {}) {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     await fs.rm(dataDir, { recursive: true, force: true });
   });
-  return { baseUrl, logLines };
+  return { baseUrl, dataDir, logLines };
+}
+
+async function snapshotFiles(root, relative = "") {
+  const entries = await fs.readdir(path.join(root, relative), { withFileTypes: true });
+  const snapshot = {};
+  for (const entry of entries) {
+    const child = path.join(relative, entry.name);
+    if (entry.isDirectory()) Object.assign(snapshot, await snapshotFiles(root, child));
+    else if (entry.isFile()) snapshot[child.split(path.sep).join("/")] = await fs.readFile(path.join(root, child), "utf8");
+  }
+  return snapshot;
 }
 
 test("health check responds and unknown routes return 404", async (t) => {
@@ -115,4 +126,73 @@ test("HTTP access logs retain diagnostics without URL, client IP, or search path
   assert.match(logs, /GET/);
   assert.match(logs, /\d{3}/);
   assert.doesNotMatch(logs, /private-search-marker|127\.0\.0\.1/);
+});
+
+test("number searches do not persist their input or expose it in HTTP/error logs or error responses", async (t) => {
+  const { baseUrl, dataDir, logLines } = await startApi(t);
+  const number = "0600000001";
+  const normalizedNumber = "+33600000001";
+  const prefixesPath = path.join(dataDir, "prefixes.json");
+  const prefixData = JSON.parse(await fs.readFile(prefixesPath, "utf8"));
+  prefixData.npv_officiels.push({ prefixe: "0600000", zone: "test", nature: "test" });
+  await fs.writeFile(prefixesPath, JSON.stringify(prefixData), "utf8");
+
+  const arcepDir = path.join(dataDir, "arcep");
+  const generationDir = path.join(arcepDir, "processed", "privacy-test");
+  await fs.mkdir(generationDir, { recursive: true });
+  await fs.writeFile(path.join(generationDir, "index.json"), JSON.stringify([
+    { start: "0600000000", end: "0600000099", allocationCode: "TEST", entityName: "Test", territory: "Métropole", allocationDate: "01/01/2020", resource: "06000" },
+  ]));
+  await fs.writeFile(path.join(arcepDir, "metadata.json"), JSON.stringify({
+    generation: "privacy-test",
+    indexFile: "processed/privacy-test/index.json",
+    sources: { MAJNUM: { attribution: "Source ARCEP de test", publishedDate: "2026-01-01" } },
+    activatedAt: "2026-01-01T00:00:00.000Z",
+    limits: [],
+  }));
+
+  const filesBeforeSearch = await snapshotFiles(dataDir);
+  const initialDataContents = Object.values(filesBeforeSearch).join("\n");
+  assert.equal(initialDataContents.includes(number), false);
+  assert.equal(initialDataContents.includes(normalizedNumber), false);
+  const arcepResponse = await fetch(`${baseUrl}/api/arcep/lookup/${number}`);
+  assert.equal(arcepResponse.status, 200);
+  assert.equal((await arcepResponse.json()).allocation.rangeStart, "0600000000");
+  const prefixResponse = await fetch(`${baseUrl}/api/prefixes/${number}`);
+  assert.equal(prefixResponse.status, 200);
+  assert.equal((await prefixResponse.json()).prefixe, "0600000");
+  assert.deepEqual(await snapshotFiles(dataDir), filesBeforeSearch);
+
+  const arcepIndexPath = path.join(generationDir, "index.json");
+  const metadataPath = path.join(arcepDir, "metadata.json");
+  await fs.writeFile(arcepIndexPath, JSON.stringify({ invalid: true }), "utf8");
+  const metadata = JSON.parse(await fs.readFile(metadataPath, "utf8"));
+  metadata.generation = "privacy-test-error";
+  await fs.writeFile(metadataPath, JSON.stringify(metadata), "utf8");
+  await fs.writeFile(prefixesPath, "{ invalid JSON", "utf8");
+  const filesBeforeErrors = await snapshotFiles(dataDir);
+
+  const originalConsoleError = console.error;
+  const errorLines = [];
+  console.error = (...args) => errorLines.push(args.map(String).join(" "));
+  let arcepError;
+  let prefixError;
+  try {
+    arcepError = await fetch(`${baseUrl}/api/arcep/lookup/${number}`);
+    prefixError = await fetch(`${baseUrl}/api/prefixes/${number}`);
+  } finally {
+    console.error = originalConsoleError;
+  }
+
+  for (const response of [arcepError, prefixError]) {
+    assert.equal(response.status, 500);
+    const message = await response.text();
+    assert.doesNotMatch(message, new RegExp(number));
+    assert.doesNotMatch(message, new RegExp(normalizedNumber.replace("+", "\\+")));
+  }
+  assert.ok(errorLines.length >= 2);
+  const combinedLogs = [...logLines, ...errorLines].join(" ");
+  assert.doesNotMatch(combinedLogs, new RegExp(number));
+  assert.doesNotMatch(combinedLogs, new RegExp(normalizedNumber.replace("+", "\\+")));
+  assert.deepEqual(await snapshotFiles(dataDir), filesBeforeErrors);
 });

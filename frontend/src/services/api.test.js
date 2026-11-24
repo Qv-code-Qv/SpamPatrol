@@ -1,4 +1,4 @@
-import { getArcepAllocation, getPrefix } from "./api";
+import { getArcepAllocation, getArcepSummary, getPrefix } from "./api";
 
 describe("API client", () => {
   const originalFetch = global.fetch;
@@ -17,6 +17,13 @@ describe("API client", () => {
     global.fetch.mockResolvedValue({ ok: true, json: async () => payload });
     await expect(getPrefix("06 01 23 45 67")).resolves.toEqual(payload);
     expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/prefixes/06%2001%2023%2045%2067"), {});
+  });
+
+  test("récupère uniquement le résumé compact de l’instantané MAJNUM", async () => {
+    const payload = { recordCount: 2345, unit: "enregistrements de ressources ou de tranches" };
+    global.fetch.mockResolvedValue({ ok: true, json: async () => payload });
+    await expect(getArcepSummary()).resolves.toEqual(payload);
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/arcep/summary"), {});
   });
 
   test("remonte le message de validation renvoyé par l’API", async () => {
