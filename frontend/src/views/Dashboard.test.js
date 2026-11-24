@@ -8,6 +8,10 @@ import Dashboard from "./Dashboard";
 
 jest.mock("services/api", () => ({ getArcepSummary: jest.fn() }));
 
+function formatShareForTest(value) {
+  return `${value.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} %`;
+}
+
 describe("Dashboard observatory", () => {
   let container;
   let root;
@@ -33,7 +37,7 @@ describe("Dashboard observatory", () => {
     const text = markup.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
 
     expect(markup).toContain("container-fluid");
-    expect(markup.match(/col-lg-6/g)).toHaveLength(2);
+    expect(markup.match(/col-lg-6/g)).toHaveLength(3);
     expect(markup.match(/col-xl-4/g)).toHaveLength(3);
     expect(markup).toContain("Observatoire de la numérotation");
     expect(markup).toContain("Ressources de numérotation recensées");
@@ -124,6 +128,84 @@ describe("Dashboard observatory", () => {
     expect([...container.querySelectorAll(".progress")].every((bar) => bar.style.height === "0.5rem")).toBe(true);
     expect(container.querySelectorAll("li.mb-2")).toHaveLength(4);
     expect(container.querySelector('a[href="https://www.data.gouv.fr/datasets/ressources-en-numerotation-telephonique"]')).not.toBeNull();
+  });
+
+  test("renders allocation years newest first, collapses after five, and preserves counts and shares", async () => {
+    const years = ["1999", "2005", "2010", "2015", "2018", "2020", "2023", "2024", "2025", "2026"];
+    const entries = years.map((year, index) => ({
+      kind: "year", year, label: year, count: index + 1, sharePercent: (index + 1) * 100 / 60,
+    }));
+    const expectedCountsAndShares = [...entries].reverse().map(({ year, count, sharePercent }) => [
+      year,
+      `${count} (${formatShareForTest(sharePercent)})`,
+    ]);
+    const text = await renderDashboardWithSummary({
+      recordCount: 60,
+      allocationYearDistribution: {
+        totalRecords: 60,
+        entries: [
+          ...entries,
+          { kind: "missing", year: null, label: "Date absente", count: 5, sharePercent: 5 * 100 / 60 },
+        ],
+      },
+    });
+
+    expect(text).toContain("Répartition par année d’attribution");
+    expect(text).toContain("Ressources présentes dans les données actuelles, classées selon leur date d’attribution.");
+    expect(text).toContain("Total : 60 ressources recensées.");
+    const getVisibleYears = () => [...container.querySelectorAll('ul[aria-label="Effectifs par année d’attribution"] strong')]
+      .map((label) => label.textContent);
+    expect(getVisibleYears()).toEqual(["2026", "2025", "2024", "2023", "2020"]);
+    const yearDetails = [...container.querySelectorAll("details")]
+      .find((details) => details.querySelector("summary").textContent === "Afficher toutes les années");
+    expect(yearDetails).toBeDefined();
+    expect(yearDetails.open).toBe(false);
+    expect(container.querySelector('ul[aria-label="Autres années d’attribution"]')).toBeNull();
+    expect(container.textContent).toContain("10 (16,67 %)");
+    expect(container.textContent).toContain("9 (15 %)");
+    expect(container.querySelector('ul[aria-label="Dates d’attribution absentes ou invalides"] strong').textContent)
+      .toBe("Date absente");
+
+    await act(async () => {
+      yearDetails.querySelector("summary").click();
+    });
+    expect(yearDetails.open).toBe(true);
+    expect(yearDetails.querySelector("summary").textContent).toBe("Réduire");
+    expect(container.querySelector('ul[aria-label="Autres années d’attribution"]')).not.toBeNull();
+    expect(getVisibleYears().concat([...yearDetails.querySelectorAll('ul[aria-label="Autres années d’attribution"] strong')]
+      .map((label) => label.textContent))).toEqual([...years].reverse());
+    expect(container.textContent).toContain("Total : 60 ressources recensées.");
+    expect([...container.querySelectorAll('ul[aria-label="Effectifs par année d’attribution"] li')]
+      .concat([...yearDetails.querySelectorAll('ul[aria-label="Autres années d’attribution"] li')]).map((row) => {
+      const year = row.querySelector("strong").textContent;
+      return [year, row.querySelector("span").textContent];
+    })).toEqual(expectedCountsAndShares);
+
+    await act(async () => {
+      yearDetails.querySelector("summary").click();
+    });
+    expect(yearDetails.open).toBe(false);
+    expect(container.querySelector('ul[aria-label="Autres années d’attribution"]')).toBeNull();
+    expect(getVisibleYears()).toEqual(["2026", "2025", "2024", "2023", "2020"]);
+    expect(text).toContain("Date absente");
+    expect(container.textContent).toContain("Ce graphique ne représente pas le nombre total d’attributions réalisées chaque année.");
+    expect(container.textContent).not.toMatch(/historique|courbe de croissance/i);
+    expect(container.querySelectorAll(".progress-bar")).toHaveLength(6);
+    expect([...container.querySelectorAll(".progress")].every((bar) => bar.style.height === "0.5rem")).toBe(true);
+  });
+
+  test("does not show allocation years when the distribution total is inconsistent", async () => {
+    const text = await renderDashboardWithSummary({
+      recordCount: 2,
+      allocationYearDistribution: {
+        totalRecords: 1,
+        entries: [{ kind: "year", year: "2020", label: "2020", count: 1, sharePercent: 100 }],
+      },
+    });
+
+    expect(text).toContain("Répartition par année d’attribution");
+    expect(text).toContain("La répartition est momentanément indisponible.");
+    expect(text).not.toContain("2020");
   });
 
   test("renders raw allocation codes with totals and interpretation limits", async () => {
@@ -223,6 +305,7 @@ describe("Dashboard observatory", () => {
       root.render(<MemoryRouter><Dashboard /></MemoryRouter>);
     });
     expect(container.textContent).toContain("Les données officielles ne sont pas disponibles pour le moment.");
+    expect(container.textContent).toContain("Ce graphique est indisponible pour le moment.");
     expect(container.textContent).not.toContain("2 345");
   });
 });

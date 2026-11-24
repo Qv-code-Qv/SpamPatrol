@@ -94,6 +94,73 @@ function buildAllocationCodeDistribution(index) {
   };
 }
 
+function buildAllocationYearDistribution(index) {
+  const groups = new Map();
+  for (const record of index) {
+    const value = record && typeof record === "object" ? record.allocationDate : undefined;
+    let kind = "year";
+    let year = null;
+    let label;
+
+    if (value == null) {
+      kind = "missing";
+      label = "Date absente";
+    } else if (typeof value === "string" && !value.trim()) {
+      kind = "empty";
+      label = "Date vide";
+    } else if (typeof value !== "string") {
+      kind = "invalid";
+      label = "Date invalide";
+    } else {
+      const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+      if (!match) {
+        kind = "invalid";
+        label = "Date invalide";
+      } else {
+        const [, dayText, monthText, yearText] = match;
+        const day = Number(dayText);
+        const month = Number(monthText);
+        const yearNumber = Number(yearText);
+        const leapYear = yearNumber % 4 === 0 && (yearNumber % 100 !== 0 || yearNumber % 400 === 0);
+        const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        if (yearNumber < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) {
+          kind = "invalid";
+          label = "Date invalide";
+        } else {
+          year = yearText;
+          label = year;
+        }
+      }
+    }
+
+    const key = JSON.stringify([kind, year]);
+    const group = groups.get(key) || { kind, year, label, count: 0 };
+    group.count += 1;
+    groups.set(key, group);
+  }
+
+  const totalRecords = index.length;
+  const entries = [...groups.values()]
+    .sort((left, right) => {
+      if (left.kind === "year" && right.kind === "year") return Number(left.year) - Number(right.year);
+      if (left.kind === "year") return -1;
+      if (right.kind === "year") return 1;
+      return left.kind.localeCompare(right.kind, "fr");
+    })
+    .map((group) => ({
+      ...group,
+      sharePercent: totalRecords ? (group.count / totalRecords) * 100 : 0,
+    }));
+  const groupedCount = entries.reduce((total, entry) => total + entry.count, 0);
+  if (groupedCount !== totalRecords) throw new Error("La répartition par année d’attribution ne correspond pas au total MAJNUM.");
+
+  return {
+    totalRecords,
+    entries,
+    method: "Les ressources présentes sont regroupées selon l’année de leur date d’attribution; chaque part est calculée sur le total des enregistrements. Les dates absentes, vides ou invalides restent comptées séparément.",
+  };
+}
+
 export function createArcepRouter({ dataDir = DEFAULT_ROOT } = {}) {
   const router = express.Router();
   let cachedGeneration = null;
@@ -137,6 +204,7 @@ export function createArcepRouter({ dataDir = DEFAULT_ROOT } = {}) {
         method: "Nombre d’objets de l’index MAJNUM préparé par l’application, comparé aux deux nombres d’enregistrements indiqués dans les métadonnées.",
         territoryDistribution: buildTerritoryDistribution(index),
         allocationCodeDistribution: buildAllocationCodeDistribution(index),
+        allocationYearDistribution: buildAllocationYearDistribution(index),
       });
     } catch (error) {
       if (error.code === "ENOENT") {

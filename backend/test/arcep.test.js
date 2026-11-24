@@ -100,6 +100,21 @@ test("downloaded ARCEP snapshots match their provenance hashes and active counts
     );
     assert.equal(codeDistribution.entries.reduce((sum, entry) => sum + entry.count, 0), index.length);
     assert.equal(codeDistribution.entries.some((entry) => entry.kind !== "value"), false);
+    const yearDistribution = summary.allocationYearDistribution;
+    const expectedYears = new Map();
+    for (const record of index) {
+      assert.match(record.allocationDate, /^\d{2}\/\d{2}\/\d{4}$/);
+      const year = record.allocationDate.slice(-4);
+      expectedYears.set(year, (expectedYears.get(year) || 0) + 1);
+    }
+    assert.equal(yearDistribution.totalRecords, index.length);
+    assert.deepEqual(
+      yearDistribution.entries.map((entry) => [entry.year, entry.count]),
+      [...expectedYears.entries()].sort(([left], [right]) => left.localeCompare(right)),
+    );
+    assert.equal(yearDistribution.entries.reduce((sum, entry) => sum + entry.count, 0), index.length);
+    assert.equal(yearDistribution.entries.every((entry) => entry.sharePercent === (entry.count / index.length) * 100), true);
+    assert.equal(yearDistribution.entries.every((entry) => entry.kind === "year"), true);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
@@ -114,12 +129,12 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   await fs.writeFile(path.join(dataDir, "prefixes.json"), JSON.stringify({ npv_officiels: [] }));
   await fs.writeFile(path.join(generationDir, "index.json"), JSON.stringify([
     { start: "0600000000", end: "0600000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "01/01/2020", resource: "06000" },
-    { start: "0610000000", end: "0610000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "01/01/2020", resource: "06100" },
-    { start: "0620000000", end: "0620000099", allocationCode: "abcd", entityName: null, territory: "MÉTROPOLE", allocationDate: "01/01/2020", resource: "06200" },
-    { start: "0630000000", end: "0630000099", allocationCode: "ZZZZ", entityName: null, territory: null, allocationDate: "01/01/2020", resource: "06300" },
-    { start: "0640000000", end: "0640000099", entityName: null, allocationDate: "01/01/2020", resource: "06400" },
-    { start: "0650000000", end: "0650000099", allocationCode: "", entityName: null, territory: 42, allocationDate: "01/01/2020", resource: "06500" },
-    { start: "0660000000", end: "0660000099", allocationCode: 42, entityName: null, territory: "   ", allocationDate: "01/01/2020", resource: "06600" },
+    { start: "0610000000", end: "0610000099", allocationCode: "ABCD", entityName: "Entité officielle", territory: "Métropole", allocationDate: "02/02/2020", resource: "06100" },
+    { start: "0620000000", end: "0620000099", allocationCode: "abcd", entityName: null, territory: "MÉTROPOLE", allocationDate: "03/03/2021", resource: "06200" },
+    { start: "0630000000", end: "0630000099", allocationCode: "ZZZZ", entityName: null, territory: null, allocationDate: null, resource: "06300" },
+    { start: "0640000000", end: "0640000099", entityName: null, resource: "06400" },
+    { start: "0650000000", end: "0650000099", allocationCode: "", entityName: null, territory: 42, allocationDate: "   ", resource: "06500" },
+    { start: "0660000000", end: "0660000099", allocationCode: 42, entityName: null, territory: "   ", allocationDate: "31/02/2020", resource: "06600" },
   ]));
   const metadataPath = path.join(arcepDir, "metadata.json");
   const metadata = {
@@ -179,6 +194,16 @@ test("ARCEP lookup is exact, reports no match, validates input, and survives abs
   );
   assert.equal(codeDistribution.entries.find((entry) => entry.code === "ZZZZ").label, "ZZZZ", "unknown codes remain visible as raw values");
   assert.equal(codeDistribution.entries.reduce((sum, entry) => sum + entry.count, 0), codeDistribution.totalRecords);
+
+  const yearDistribution = summary.allocationYearDistribution;
+  assert.equal(yearDistribution.totalRecords, 7);
+  assert.deepEqual(
+    yearDistribution.entries.map((entry) => [entry.kind === "year" ? entry.year : entry.kind, entry.count]),
+    [["2020", 2], ["2021", 1], ["empty", 1], ["invalid", 1], ["missing", 2]],
+  );
+  assert.equal(yearDistribution.entries.find((entry) => entry.year === "2020").sharePercent, (2 / 7) * 100);
+  for (const entry of yearDistribution.entries) assert.equal(entry.sharePercent, (entry.count / 7) * 100);
+  assert.equal(yearDistribution.entries.reduce((sum, entry) => sum + entry.count, 0), yearDistribution.totalRecords);
 
   metadata.counts.allocations = 8;
   await fs.writeFile(metadataPath, JSON.stringify(metadata));

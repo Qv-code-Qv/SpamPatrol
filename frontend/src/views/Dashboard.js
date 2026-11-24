@@ -53,6 +53,30 @@ function hasConsistentAllocationCodeDistribution(distribution, recordCount) {
   );
 }
 
+function hasConsistentAllocationYearDistribution(distribution, recordCount) {
+  let previousYear = 0;
+  const seenSpecialKinds = new Set();
+  return Boolean(
+    distribution
+    && distribution.totalRecords === recordCount
+    && Array.isArray(distribution.entries)
+    && distribution.entries.every((entry) => {
+      if (!entry || !Number.isSafeInteger(entry.count) || entry.count < 0
+        || !Number.isFinite(entry.sharePercent) || entry.sharePercent < 0 || entry.sharePercent > 100) return false;
+      if (entry.kind === "year") {
+        if (typeof entry.year !== "string" || !/^\d{4}$/.test(entry.year)
+          || entry.label !== entry.year || Number(entry.year) <= previousYear) return false;
+        previousYear = Number(entry.year);
+        return true;
+      }
+      if (!["missing", "empty", "invalid"].includes(entry.kind) || entry.year !== null || seenSpecialKinds.has(entry.kind)) return false;
+      seenSpecialKinds.add(entry.kind);
+      return true;
+    })
+    && distribution.entries.reduce((total, entry) => total + entry.count, 0) === recordCount
+  );
+}
+
 function renderAllocationCodeEntries(entries) {
   return entries.map((entry) => (
     <li key={`${entry.kind}:${entry.code === null ? entry.kind : entry.code}`} className="mb-2">
@@ -67,9 +91,24 @@ function renderAllocationCodeEntries(entries) {
   ));
 }
 
+function renderAllocationYearEntries(entries) {
+  return entries.map((entry) => (
+    <li key={`${entry.kind}:${entry.year === null ? entry.kind : entry.year}`} className="mb-2">
+      <div className="d-flex justify-content-between align-items-baseline flex-wrap">
+        <strong>{entry.label}</strong>
+        <span>{formatCount(entry.count)} ({formatShare(entry.sharePercent)})</span>
+      </div>
+      <div className="progress" style={{ height: "0.5rem" }} aria-hidden="true">
+        <div className="progress-bar bg-info" style={{ width: `${entry.sharePercent}%` }} />
+      </div>
+    </li>
+  ));
+}
+
 function Dashboard() {
   const [summary, setSummary] = React.useState(null);
   const [summaryError, setSummaryError] = React.useState("");
+  const [showAllAllocationYears, setShowAllAllocationYears] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -213,6 +252,73 @@ function Dashboard() {
                   </ul>
                   <p className="mb-2"><strong>À retenir :</strong> les libellés distincts restent séparés.</p>
                   <p className="small text-muted mb-0">Le territoire déclaré ne localise pas nécessairement l’appelant ou l’utilisateur.</p>
+                </>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xs="12" lg="6" className="mb-3">
+          <Card className="h-100 mb-0">
+            <Card.Header>
+              <Card.Title as="h4">Répartition par année d’attribution</Card.Title>
+              <p className="card-category mb-0">Ressources présentes dans les données actuelles, classées selon leur date d’attribution.</p>
+            </Card.Header>
+            <Card.Body>
+              {summaryError ? (
+                <Alert show variant="warning" role="alert">Ce graphique est indisponible pour le moment.</Alert>
+              ) : !summary ? (
+                <div role="status" aria-live="polite">
+                  <Spinner animation="border" size="sm" aria-hidden="true" /> Chargement du graphique…
+                </div>
+              ) : !hasConsistentAllocationYearDistribution(summary.allocationYearDistribution, summary.recordCount) ? (
+                <Alert show variant="warning" role="alert">La répartition est momentanément indisponible.</Alert>
+              ) : summary.recordCount === 0 || summary.allocationYearDistribution.entries.length === 0 ? (
+                <Alert show variant="info" role="status">Aucune donnée à afficher.</Alert>
+              ) : (
+                <>
+                  <p className="mb-2">
+                    Total : {formatCount(summary.allocationYearDistribution.totalRecords)} ressources recensées.
+                  </p>
+                  {(() => {
+                    const yearEntries = summary.allocationYearDistribution.entries
+                      .filter((entry) => entry.kind === "year")
+                      .slice()
+                      .reverse();
+                    const exceptionalEntries = summary.allocationYearDistribution.entries
+                      .filter((entry) => entry.kind !== "year");
+                    const visibleYears = yearEntries.slice(0, 5);
+                    return (
+                      <>
+                        <ul className="list-unstyled" aria-label="Effectifs par année d’attribution">
+                          {renderAllocationYearEntries(visibleYears)}
+                        </ul>
+                        {yearEntries.length > 5 && (
+                          <details
+                            className="mb-3"
+                            open={showAllAllocationYears}
+                          >
+                            <summary onClick={(event) => {
+                              event.preventDefault();
+                              setShowAllAllocationYears((visible) => !visible);
+                            }}>
+                              {showAllAllocationYears ? "Réduire" : "Afficher toutes les années"}
+                            </summary>
+                            {showAllAllocationYears && (
+                              <ul className="list-unstyled mt-3" aria-label="Autres années d’attribution">
+                                {renderAllocationYearEntries(yearEntries.slice(5))}
+                              </ul>
+                            )}
+                          </details>
+                        )}
+                        {exceptionalEntries.length > 0 && (
+                          <ul className="list-unstyled" aria-label="Dates d’attribution absentes ou invalides">
+                            {renderAllocationYearEntries(exceptionalEntries)}
+                          </ul>
+                        )}
+                      </>
+                    );
+                  })()}
+                  <p className="small text-muted mb-0">Ce graphique ne représente pas le nombre total d’attributions réalisées chaque année.</p>
                 </>
               )}
             </Card.Body>
